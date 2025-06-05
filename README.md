@@ -1,4 +1,4 @@
-## MPPI researc
+## MPPI research
 Dependencies:
 - `gym==0.26.1`
 - `gymnasium==0.28.1`

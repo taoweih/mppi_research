@@ -8,8 +8,6 @@ import custom_envs
 
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
-    # TIMESTEPS = 100  # T
-    # N_SAMPLES = 1000  # K
 
     TIMESTEPS = 100  # T
     N_SAMPLES = 3000  # K

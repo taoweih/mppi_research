@@ -19,7 +19,7 @@ if __name__ == "__main__":
     ACTION_LOW = -2.0
     ACTION_HIGH = 2.0
 
-    d = torch.device("cpu")
+    d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):
         d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     dtype = torch.float32

@@ -7,6 +7,7 @@ import math
 from pytorch_mppi import mppi
 from gym import logger as gym_log
 import time
+import custom_envs
 
 # gym_log.set_level(gym_log.INFO)
 # logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ dt_param = 0.2
 
 
 if __name__ == "__main__":
-    ENV_NAME = "Acrobot-v1" #source code at /opt/anaconda3/envs/mppi_research/lib/python3.10/site-packages/gymnasium/envs/classic_control/acrobot.py
+    ENV_NAME = "ContinuousAcrobot-v1"
     TIMESTEPS = 20  # T
     N_SAMPLES = 50000  # K
     ACTION_LOW = -4.0

@@ -1,27 +1,35 @@
 import gymnasium as gym
 import numpy as np
+import warnings
 import torch
 import logging
 import math
 from pytorch_mppi import mppi
-from gym import logger as gym_log
 
-gym_log.set_level(gym_log.INFO)
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG,
-                    format='[%(levelname)s %(asctime)s %(pathname)s:%(lineno)d] %(message)s',
-                    datefmt='%m-%d %H:%M:%S')
+import sys
+sys.path.append("..")
+import custom_mppi
+
+# from gym import logger as gym_log
+
+# gym_log.set_level(gym_log.INFO)
+# logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='[%(levelname)s %(asctime)s %(pathname)s:%(lineno)d] %(message)s',
+#                     datefmt='%m-%d %H:%M:%S')
 
 if __name__ == "__main__":
     ENV_NAME = "Pendulum-v1" #source code at /opt/anaconda3/envs/mppi_research/lib/python3.10/site-packages/gymnasium/envs/classic_control/pendulum.py
-    TIMESTEPS = 20  # T
-    N_SAMPLES = 1000 # K
+    TIMESTEPS = 10  # T
+    N_SAMPLES = 10000 # K
     ACTION_LOW = -2.0
     ACTION_HIGH = 2.0
 
     d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):
         d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    if d == torch.device("cpu"):
+        warnings.warn("No GPU device detected, using cpu instead", UserWarning)
     dtype = torch.float32
 
     noise_sigma = torch.tensor(10, device=d, dtype=dtype)
@@ -74,10 +82,17 @@ if __name__ == "__main__":
         env.state = env.unwrapped.state = [np.pi, 1]
 
     nx = 2
-    mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=1000)
+
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=1000)
-    logger.info("Total reward %f", total_reward)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=1000)
+
+
+    # logger.info("Total reward %f", total_reward)
 
     env.close()

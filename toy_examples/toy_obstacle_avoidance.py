@@ -1,25 +1,31 @@
 import gymnasium as gym
 import pygame
-import numpy as np
+import warnings
 import torch
 import math
 from pytorch_mppi import mppi
 import custom_envs
+import sys
+sys.path.append("..")
+import custom_mppi
 
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
     TIMESTEPS = 100  # T
-    N_SAMPLES = 3000  # K
+    N_SAMPLES = 50000  # K
     ACTION_LOW = -5.0
     ACTION_HIGH = 5.0
-    ENV = "U"
+    # ENV = "U"
+    ENV = "default"
 
-    d = torch.device("cpu")
+    d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):
         d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    # d = torch.device("cpu")
+    if d == torch.device("cpu"):
+        warnings.warn("No GPU device detected, using cpu instead", UserWarning)
     dtype = torch.float32
-    d = torch.device("cpu")
 
     # noise_sigma = torch.tensor(10, device=d, dtype=dtype)
     noise_sigma = torch.tensor([[10, 0], [0, 10]], device=d, dtype=dtype)
@@ -60,10 +66,11 @@ if __name__ == "__main__":
         valid_x = (new_x >= 0) & (new_x < 599)
         valid_y = (new_y >= 0) & (new_y < 399)
 
-        int_x = new_x.long().clamp(0, obs_map.shape[0] - 1)
-        int_y = new_y.long().clamp(0, obs_map.shape[1] - 1)
+        int_x = new_x.long().clamp(0, obs_map.shape[0] - 1).cpu()
+        int_y = new_y.long().clamp(0, obs_map.shape[1] - 1).cpu()
 
         is_obstacle = obs_map[int_x, int_y] == 1
+        is_obstacle = is_obstacle.to(valid_x.device)
         valid_mask = valid_x & valid_y & (~is_obstacle)
 
         new_x = torch.where(valid_mask, new_x, car_x)
@@ -104,9 +111,14 @@ if __name__ == "__main__":
     #     _,r,_,_,_ = env.step(action)
 
     nx = 2
-    mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=1000)
+
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=1000)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=1000)
 
     env.close()

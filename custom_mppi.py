@@ -48,23 +48,23 @@ class CUSTOM_MPPI():
         self.u_min = self.u_min.to(device=self.device)
         self.u_max = self.u_max.to(device=self.device)
 
-        # Control sequence: (T x nu)
-        self.U = U_init
-        self.u_init = u_init.to(self.device)
-        if self.U is None:
-            self.U = self.noise_dist.sample((self.T,))
-
         # added rollout control noise
         self.noise_mu = noise_mu.to(self.device)
         self.noise_sigma = noise_sigma.to(self.device)
         self.noise_sigma_inv = torch.inverse(self.noise_sigma)
         self.noise_dist = MultivariateNormal(self.noise_mu,covariance_matrix=self.noise_sigma)
 
+        # Control sequence: (T x nu)
+        self.U = U_init
+        self.u_init = u_init.to(self.device)
+        if self.U is None:
+            self.U = self.noise_dist.sample((self.T,))
+
         self.F = dynamics
         self.running_cost = running_cost
         self.state = None
 
-    @handle_batch_input(n=2)
+    @handle_batch_input(n=1)
     def _dynamics(self,state,u,t):
         return self.F(state,u)
     
@@ -80,18 +80,18 @@ class CUSTOM_MPPI():
         self.U = self.noise_dist.sample((self.T,))
 
 
-    def get_perturbed_actions(self):
+    def get_perturbed_actions_and_noise(self):
         noise = self.noise_dist.rsample((self.K, self.T))
         perturbed_action = self.U + noise
         perturbed_action = torch.max(torch.min(perturbed_action, self.u_max), self.u_min) # control limit
-        return perturbed_action # (K x T x nu)
+        return perturbed_action, noise # (K x T x nu)
     
     def implement_rollouts(self, perturbed_actions):
         K, T, nu = perturbed_actions.shape
         assert nu == self.nu
         total_cost = torch.zeros(K, device=self.device, dtype=self.dtype)
 
-        state = self.state
+        state = self.state.view(1, -1).repeat(K, 1)
         states = []
         actions = []
 
@@ -99,17 +99,23 @@ class CUSTOM_MPPI():
             u = perturbed_actions[:,t]
             next_state = self._dynamics(state, u, t)
             state = next_state
-            running_cost = self.running_cost(state,u,t)
+            running_cost = self._running_cost(state,u,t)
             total_cost = total_cost + running_cost
 
             states.append(state)
             actions.append(u)
 
-            actions = torch.stack(actions, dim=-2) # size K x T x nu
-            states = torch.stack(states, dim=-2) # size K x T x nx
+        actions = torch.stack(actions, dim=-2) # size K x T x nu
+        states = torch.stack(states, dim=-2) # size K x T x nx
 
 
         return total_cost
+    
+    def compute_optimal_control_sequence(self,cost_total, noise):
+        weight = torch.exp((-1/self.lambda_)*(cost_total-torch.min(cost_total))) # subtract min to prevent extreme small weight)
+        omega = weight/torch.sum(weight)
+        action = torch.sum(omega.view(-1,1,1)*noise,dim=0)
+        return action
         
     def command(self,state):
         self.shift_nominal_trajectory
@@ -117,11 +123,12 @@ class CUSTOM_MPPI():
             state = torch.tensor(state)
         self.state = state.to(dtype=self.dtype,device=self.device)
 
-        perturbed_actions = self.get_perturbed_actions()
-        total_cost = self.implement_rollouts(perturbed_actions)
+        perturbed_actions, noise = self.get_perturbed_actions_and_noise()
+        cost_total = self.implement_rollouts(perturbed_actions)
 
-        
-        
+        action = self.compute_optimal_control_sequence(cost_total, noise)
+        self.U = self.U + action
+        return self.U[0]      
 
 def run_mppi(mppi, env, iter=100, render = True):
     for i in range(iter):

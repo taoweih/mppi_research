@@ -2,21 +2,13 @@ import gymnasium as gym
 import numpy as np
 import warnings
 import torch
-import logging
+import time
 import math
 from pytorch_mppi import mppi
 
 import sys
 sys.path.append("..")
 import custom_mppi
-
-# from gym import logger as gym_log
-
-# gym_log.set_level(gym_log.INFO)
-# logger = logging.getLogger(__name__)
-# logging.basicConfig(level=logging.DEBUG,
-#                     format='[%(levelname)s %(asctime)s %(pathname)s:%(lineno)d] %(message)s',
-#                     datefmt='%m-%d %H:%M:%S')
 
 if __name__ == "__main__":
     ENV_NAME = "Pendulum-v1" #source code at /opt/anaconda3/envs/mppi_research/lib/python3.10/site-packages/gymnasium/envs/classic_control/pendulum.py
@@ -76,22 +68,29 @@ if __name__ == "__main__":
 
     downward_start = True
     env = gym.make(ENV_NAME, render_mode="human")
+    nx = 2
 
     env.reset()
     if downward_start:
         env.state = env.unwrapped.state = [np.pi, 1]
 
-    nx = 2
-    # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
-    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=1000)
+    mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    start = time.time()
+    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=300)
+    print("Time:", time.time() - start)
+
+    env.reset()
+    if downward_start:
+        env.state = env.unwrapped.state = [np.pi, 1]
 
     mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=1000)
-
+    start = time.time()    
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=300)
+    print("Time:", time.time() - start)
 
     # logger.info("Total reward %f", total_reward)
 

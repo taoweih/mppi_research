@@ -23,7 +23,7 @@ __author__ = "Christoph Dann <cdann@cdann.de>"
 
 max_torque = 10
 
-# SOURCE:
+# Based on the dsicrete acrobot envrionement from gym/gymnasium
 # https://github.com/rlpy/rlpy/blob/master/rlpy/Domains/Acrobot.py
 
 

@@ -21,7 +21,7 @@ import custom_mppi
 if __name__ == "__main__":
     ENV_NAME = "Pendulum-v1" #source code at /opt/anaconda3/envs/mppi_research/lib/python3.10/site-packages/gymnasium/envs/classic_control/pendulum.py
     TIMESTEPS = 10  # T
-    N_SAMPLES = 10000 # K
+    N_SAMPLES = 1000 # K
     ACTION_LOW = -2.0
     ACTION_HIGH = 2.0
 

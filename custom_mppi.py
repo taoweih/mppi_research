@@ -5,7 +5,8 @@ from arm_pytorch_utilities import handle_batch_input
 class CUSTOM_MPPI():
 
     def __init__(self, dynamics, running_cost, nx, noise_sigma, 
-                 noise_mu=None, 
+                 noise_mu=None,
+                 terminal_cost = None, 
                  num_samples=100, 
                  time_steps=15, 
                  device = torch.device("cpu"),
@@ -59,9 +60,11 @@ class CUSTOM_MPPI():
         self.u_init = u_init.to(self.device)
         if self.U is None:
             self.U = self.noise_dist.sample((self.T,))
+            # self.U = torch.zeros_like(self.U)
 
         self.F = dynamics
         self.running_cost = running_cost
+        self.terminal_cost = terminal_cost 
         self.state = None
 
     @handle_batch_input(n=1)
@@ -74,10 +77,12 @@ class CUSTOM_MPPI():
     
     def shift_nominal_trajectory(self):
         self.U = torch.roll(self.U, -1, dims=0)
-        self.U[-1] = self.u_init
+        # self.U[-1] = self.u_init
+        self.U[-1] = self.U[-2]
 
     def reset(self):
         self.U = self.noise_dist.sample((self.T,))
+        # self.U = torch.zeros_like(self.U)
 
 
     def get_perturbed_actions_and_noise(self):
@@ -125,6 +130,10 @@ class CUSTOM_MPPI():
 
         perturbed_actions, noise = self.get_perturbed_actions_and_noise()
         cost_total = self.implement_rollouts(perturbed_actions)
+
+        action_cost = self.lambda_ * torch.abs(noise) @ self.noise_sigma_inv
+        control_cost = torch.sum(self.U * action_cost, dim=(1, 2))
+        cost_total = cost_total + 0.01*control_cost
 
         action = self.compute_optimal_control_sequence(cost_total, noise)
         self.U = self.U + action

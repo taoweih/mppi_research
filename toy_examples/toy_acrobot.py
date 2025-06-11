@@ -41,9 +41,9 @@ dt_param = 0.2
 if __name__ == "__main__":
     ENV_NAME = "ContinuousAcrobot-v1"
     TIMESTEPS = 20  # T
-    N_SAMPLES = 80000  # K
-    ACTION_LOW = -4.0
-    ACTION_HIGH = 4.0
+    N_SAMPLES = 200000  # K
+    ACTION_LOW = -10.0
+    ACTION_HIGH = 10.0
 
     d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):

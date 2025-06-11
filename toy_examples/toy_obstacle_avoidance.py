@@ -12,23 +12,23 @@ import custom_mppi
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
-    TIMESTEPS = 100  # T
-    N_SAMPLES = 50000  # K
+    TIMESTEPS = 5000  # T
+    N_SAMPLES = 300  # K
     ACTION_LOW = -5.0
     ACTION_HIGH = 5.0
-    # ENV = "U"
-    ENV = "default"
+    ENV = "U"
+    # ENV = "default"
 
     d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):
         d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    # d = torch.device("cpu")
+    d = torch.device("cpu")
     if d == torch.device("cpu"):
         warnings.warn("No GPU device detected, using cpu instead", UserWarning)
     dtype = torch.float32
 
     # noise_sigma = torch.tensor(10, device=d, dtype=dtype)
-    noise_sigma = torch.tensor([[10, 0], [0, 10]], device=d, dtype=dtype)
+    noise_sigma = torch.tensor([[3, 0], [0, 3]], device=d, dtype=dtype)
     lambda_ = 1.
 
     if ENV == "default":
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     def running_cost(state, action):
         cost = 0
-        distance_sq = torch.sum((state - goal)**4, dim=1) 
+        distance_sq = torch.sum((state - goal)**2, dim=1)
         cost += distance_sq
 
         for obs in obstacles:
@@ -90,7 +90,7 @@ if __name__ == "__main__":
             y_in = (state[:, 1] >= obs.top) & (state[:, 1] <= obs.top + obs.height)
             collided = x_in & y_in
 
-            cost += collided.float() * 1e10  # penalty
+            cost += collided.float() *1e15  # penalty
 
         return cost 
 

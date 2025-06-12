@@ -22,7 +22,7 @@ if __name__ == "__main__":
         d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     if d == torch.device("cpu"):
         warnings.warn("No GPU device detected, using cpu instead", UserWarning)
-    dtype = torch.float32
+    dtype = torch.float64
 
     noise_sigma = torch.tensor(10, device=d, dtype=dtype)
     # noise_sigma = torch.tensor([[10, 0], [0, 10]], device=d, dtype=dtype)

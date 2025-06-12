@@ -76,7 +76,6 @@ class CUSTOM_MPPI():
         self.u_init = u_init.to(self.device)
         if self.U is None:
             self.U = self.noise_dist.sample((self.T,))
-            # self.U = torch.zeros_like(self.U)
 
         self.F = dynamics
         self.running_cost = running_cost
@@ -84,7 +83,6 @@ class CUSTOM_MPPI():
     
     def reset(self):
         self.U = self.noise_dist.sample((self.T,))
-        # self.U = torch.zeros_like(self.U)
 
     #handle parallel dynamics and running cost function
     @handle_batch_input(n=1)
@@ -95,11 +93,20 @@ class CUSTOM_MPPI():
     def _running_cost(self,state,u,t):
         return self.running_cost(state,u)
     
-    def shift_nominal_trajectory(self):
+    def shift_nominal_trajectory(self): 
+        '''
+        Shift the control sequence (Self.U) after applying the first control input
+        '''
         self.U = torch.roll(self.U, -1, dims=0)
         self.U[-1] = self.u_init
 
     def get_perturbed_actions_and_noise(self):
+        '''
+        Draw K samples of random control actions in T timesteps.
+
+        :returns perturbed_action: Shape (K x T x nu).
+        :returns noise: Shape (K x T x nu).
+        '''
         noise = self.noise_dist.rsample((self.K, self.T))
         perturbed_action = self.U + noise
         perturbed_action = torch.max(torch.min(perturbed_action, self.u_max), self.u_min) # control limit
@@ -107,6 +114,13 @@ class CUSTOM_MPPI():
         return perturbed_action, noise # (K x T x nu)
     
     def implement_rollouts(self, perturbed_actions):
+        '''
+        Rollout the K samples of control input sequence and evaluate the cost
+
+        :params perturbed_actions: Shape (K x T x nu).
+
+        :returns rollout_cost: Shape (K).
+        '''
         K, T, nu = perturbed_actions.shape
         assert nu == self.nu
         rollout_cost = torch.zeros(K, device=self.device, dtype=self.dtype)
@@ -124,14 +138,30 @@ class CUSTOM_MPPI():
         return rollout_cost
     
     def compute_optimal_control_sequence(self,cost_total, noise):
+        '''
+        Based on the cost, weight each sample and combine them to find a optimal control trajectory
+
+        :params cost_total: Shape (K).
+        :params nosie: Shape (K x T x nu)
+
+        :returns action: Shape (T x nu).
+        '''
         weight = torch.exp((-1/self.lambda_)*(cost_total-torch.min(cost_total))) # subtract min to prevent extreme small weight)
         omega = weight/torch.sum(weight)
         action = torch.sum(omega.view(-1,1,1)*noise,dim=0)
         return action
         
     def command(self,state):
+        '''
+        Main step for MPPI algorithm, shift control input, generate K samples of control input sequence, 
+        rollout and combine to find one optimal control input
+
+        :params state: Current state of the system. Shape (nx)
+
+        :returns control_input: Shape (nu).
+        '''
         self.shift_nominal_trajectory()
-        
+
         if not torch.is_tensor(state):
             state = torch.tensor(state)
         self.state = state.to(dtype=self.dtype,device=self.device)
@@ -152,9 +182,20 @@ class CUSTOM_MPPI():
         # Combine to find one optimal trajectory based on total cost
         action = self.compute_optimal_control_sequence(cost_total, noise)
         self.U = self.U + action
-        return self.U[0]      
+        control_input = self.U[0]
+
+        return control_input      
 
 def run_mppi(mppi, env, iter=100, render = True):
+    '''
+    Run mppi algorithm for a set of iterations 
+
+    :params mppi: an instance of MPPI class
+    :params env: a environment
+    :params iter: number of iterations to run mppi
+    :params render: whether to display the gym environment
+    '''
+    
     for i in range(iter):
         state = env.unwrapped.state.copy() # current state of the robot
         action = mppi.command(state) # get the control input from mppi based on current state

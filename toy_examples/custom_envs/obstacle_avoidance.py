@@ -62,11 +62,6 @@ class ObstacleAvoidanceEnv(gym.Env):
         for obs in self.obstacles:
             self.obs_map[obs.left:obs.left + obs.width,obs.top:obs.top + obs.height] = 1
 
-    def step(self, action):
-        """Move agent according to action: dx, dy"""
-        self.agent_pos += action
-        self.agent_pos = np.clip(self.agent_pos, 0, [self.width, self.height])
-
     def step(self, u):
         car_x, car_y = self.state
 
@@ -88,7 +83,7 @@ class ObstacleAvoidanceEnv(gym.Env):
 
         return self._get_obs(), -costs, False, False, {}
     
-    def reset(self):
+    def reset(self, seed=None, options=None):
         if self.env == "default":
             self.state = np.array([50.0, 50.0]) #start position
 

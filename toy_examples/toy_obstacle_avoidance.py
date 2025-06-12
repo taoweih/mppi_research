@@ -13,7 +13,7 @@ if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
     TIMESTEPS = 200  # T
-    N_SAMPLES = 20000  # K
+    N_SAMPLES = 10000  # K
     ACTION_LOW = -5.0
     ACTION_HIGH = 5.0
     # ENV = "U"
@@ -116,7 +116,7 @@ if __name__ == "__main__":
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     start = time.time()
-    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=100)
+    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=200)
     print("Time:", time.time() - start)
 
 
@@ -127,7 +127,7 @@ if __name__ == "__main__":
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     start = time.time()
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=100)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
     print("Time:", time.time() - start)
 
     env.close()

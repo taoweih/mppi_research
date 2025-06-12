@@ -130,7 +130,8 @@ class CUSTOM_MPPI():
         return action
         
     def command(self,state):
-        self.shift_nominal_trajectory
+        self.shift_nominal_trajectory()
+        
         if not torch.is_tensor(state):
             state = torch.tensor(state)
         self.state = state.to(dtype=self.dtype,device=self.device)

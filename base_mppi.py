@@ -1,17 +1,15 @@
 import torch
 from torch.distributions.multivariate_normal import MultivariateNormal
 from arm_pytorch_utilities import handle_batch_input
-from torchkde import KernelDensity
 
 # Built based on the base MPPI implementation from pytorch_mppi form https://github.com/UM-ARM-Lab/pytorch_mppi/blob/master/src/pytorch_mppi/mppi.py
 
-class CUSTOM_MPPI():
+class BASE_MPPI():
 
     def __init__(self, dynamics, running_cost, nx, noise_sigma, 
                  noise_mu=None,
                  num_samples=100, 
                  time_steps=15, 
-                 steps_per_stage=5,
                  device = torch.device("cpu"),
                  lambda_ = 1.0,
                  u_min=None,
@@ -26,7 +24,6 @@ class CUSTOM_MPPI():
         :param noise_mu: (nu) control noise mean (used to bias control samples); defaults to zero mean
         :param num_samples: K, number of trajectories to sample
         :param time_steps: T, length of each trajectory
-        :param steps_per_stage, N steps to partially rollout control per stage
         :param device: pytorch device
         :param lambda\_: temperature, positive scalar where larger values will allow more exploration
         :param u_min: (nu) minimum values for each dimension of control to pass into dynamics
@@ -39,7 +36,6 @@ class CUSTOM_MPPI():
         self.dtype = noise_sigma.dtype
         self.K = num_samples
         self.T = time_steps
-        self.N = steps_per_stage
 
         # dimensions of state and control
         self.nx = nx # state dimension
@@ -131,22 +127,14 @@ class CUSTOM_MPPI():
 
         state = self.state.view(1, -1).repeat(K, 1) # repeat K starting state
 
-        stage_counter = 0
         # rollout dynamics and calculate cost for T timesteps
-        for t in range(T): 
+        for t in range(T):
             u = perturbed_actions[:,t]
             next_state = self._dynamics(state, u, t)
-            state = next_state # shape (K x nx)
+            state = next_state
             running_cost = self._running_cost(state,u,t)
-
-            if (stage_counter % self.N == 0): # TODO test edge cases for division
-                # TODO 
-                kde = KernelDensity(bandwidth=1.0, kernel="gaussian")
-                kde.fit(state)
-                pass
-
             rollout_cost = rollout_cost + running_cost
-            stage_counter+=1
+
         return rollout_cost
     
     def compute_optimal_control_sequence(self,cost_total, noise):

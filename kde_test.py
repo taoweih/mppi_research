@@ -23,7 +23,14 @@ _ = kde.fit(X) # fit kde to data
 X_new = torch.distributions.Uniform(-4,4).sample((10000,))
 score = kde.score_samples(X_new.unsqueeze(1))
 n_score = torch.exp(score)
-X_accepted = X_new[n_score > 3e-1]
+
+inv = 1.0 / n_score
+inv = inv / inv.max()
+print(inv)
+
+rand_num = torch.rand_like(inv)
+X_accepted = X_new[rand_num < inv]
+print(X_accepted.shape)
 X_new = X_accepted.unsqueeze(1)
 
 

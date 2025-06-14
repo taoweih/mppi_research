@@ -3,7 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-multivariate_normal = torch.distributions.MultivariateNormal(torch.zeros(1), torch.eye(1))
+multivariate_normal = torch.distributions.MultivariateNormal(torch.zeros(2), torch.eye(2))
 X = multivariate_normal.sample((50000,)) # create data
 plt.figure()
 if X.shape[1] == 1:
@@ -16,15 +16,18 @@ else:
 plt.title("from normal")
 plt.show()
 
-kde = KernelDensity(bandwidth=0.1, kernel='gaussian') # create kde object with isotropic bandwidth matrix
+kde = KernelDensity(bandwidth=0.3, kernel='gaussian') # create kde object with isotropic bandwidth matrix
 _ = kde.fit(X) # fit kde to data
 
 # X_new = kde.sample(5) # sample from estimated density
-X_new = torch.distributions.Uniform(-4,4).sample((10000,))
+X_new = torch.distributions.Uniform(torch.tensor([-6,-6],dtype=torch.float32),torch.tensor([6,6],dtype=torch.float32)).sample((100,))
+print(X_new.shape)
 score = kde.score_samples(X_new.unsqueeze(1))
 n_score = torch.exp(score)
+n_score = n_score / n_score.max()
+n_score = torch.clamp(n_score, min=1e-5)
 
-inv = 1.0 / n_score
+inv = 1.0 / n_score**0.5
 inv = inv / inv.max()
 print(inv)
 

@@ -51,7 +51,7 @@ if __name__ == "__main__":
     if d == torch.device("cpu"):
         warnings.warn("No GPU device detected, using cpu instead", UserWarning)
 
-    dtype = torch.float64
+    dtype = torch.float32
 
     noise_sigma = torch.tensor(3, device=d, dtype=dtype)
     # noise_sigma = torch.tensor([[10, 0], [0, 10]], device=d, dtype=dtype)

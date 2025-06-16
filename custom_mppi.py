@@ -140,10 +140,31 @@ class CUSTOM_MPPI():
             running_cost = self._running_cost(state,u,t)
 
             if (stage_counter % self.N == 0): # TODO test edge cases for division
-                # TODO 
-                kde = KernelDensity(bandwidth=1.0, kernel="gaussian")
+                kde = KernelDensity(bandwidth=0.5, kernel="gaussian")
                 kde.fit(state)
+
+                state_proposed = torch.distributions.Uniform(self.u_min*torch.ones((self.nx,)), self.u_max*torch.ones((self.nx,))).sample((self.K,))
+                if state_proposed.shape[1] == 1:
+                    score = kde.score_samples(state_proposed.unsqueeze(1)) # kde score samples calculate log(p(x))
+                else:
+                    score = kde.score_samples(state_proposed)
                 pass
+
+                p_x = torch.exp(score) # calculate pdf of x
+                p_x = p_x / p_x.max()
+                p_x = torch.clamp(p_x, min=1e-5) # get rid of really small values to prevent really large values when taking the inverse
+
+                inv_px = 1.0 / p_x**0.5 # calculate inverse of the pdf
+                inv_px = inv_px / inv_px.max()
+
+                rand_num = torch.rand_like(inv_px)
+                state_accepted = state_proposed[rand_num < inv_px] # Mask to accept points more with higher likelihood in the invense distribution
+                if state_accepted.shape[1] == 1:
+                    state_accepted = state_accepted.squeeze(1)
+                else:
+                    state_accepted = state_accepted
+
+                state = state_accepted
 
             rollout_cost = rollout_cost + running_cost
             stage_counter+=1

@@ -6,8 +6,9 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 # TODO, new samples should only come from existing datas used for density estimation"
+# TODO test this method on higher dimension data
 
-multivariate_normal = torch.distributions.MultivariateNormal(torch.zeros(2), torch.eye(2))
+multivariate_normal = torch.distributions.MultivariateNormal(torch.zeros(1), torch.eye(1))
 X = multivariate_normal.sample((50000,)) # create data
 plt.figure()
 if X.shape[1] == 1:
@@ -38,29 +39,30 @@ plt.show()
 kde = KernelDensity(bandwidth=0.4, kernel='gaussian') # create kde object with isotropic bandwidth matrix
 _ = kde.fit(X) # fit kde to data
 
-# X_new = torch.distributions.Uniform(-6,6).sample((100,))
-X_new = torch.distributions.Uniform(torch.tensor([-6,-6],dtype=torch.float32),torch.tensor([6,6],dtype=torch.float32)).sample((50000,))
+# X_new = torch.distributions.Uniform(-6,6).sample((1000,))
+# X_new = torch.distributions.Uniform(torch.tensor([-6,-6],dtype=torch.float32),torch.tensor([6,6],dtype=torch.float32)).sample((50000,))
 # X_new = torch.distributions.Uniform(torch.tensor([-6,-6,-6],dtype=torch.float32),torch.tensor([6,6,6],dtype=torch.float32)).sample((50000,))
 
-if X_new.shape[1] == 1:
+X_new = X
+if len(X_new.shape) == 1:
     score = kde.score_samples(X_new.unsqueeze(1)) # kde score samples calculate log(p(x))
 else:
     score = kde.score_samples(X_new)
 
 p_x = torch.exp(score) # calculate pdf of x
-p_x = p_x / p_x.max()
-p_x = torch.clamp(p_x, min=1e-5) # get rid of really small values to prevent really large values when taking the inverse
 
-inv_px = 1.0 / p_x**0.5 # calculate inverse of the pdf
-inv_px = inv_px / inv_px.max()
+inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
+inv_px = inv_px / inv_px.sum()
 
-rand_num = torch.rand_like(inv_px)
-X_accepted = X_new[rand_num < inv_px] # Mask to accept points more with higher likelihood in the invense distribution
+# rand_num = torch.rand_like(inv_px)
+# X_accepted = X_new[rand_num < inv_px] # Mask to accept points more with higher likelihood in the invense distribution
+# if len(X_accepted.shape) == 1:
+#     X_new = X_accepted.unsqueeze(1)
+# else:
+#     X_new = X_accepted
 
-if X_accepted.shape[1] == 1:
-    X_new = X_accepted.squeeze(1)
-else:
-    X_new = X_accepted
+indices = torch.multinomial(inv_px, num_samples=50000, replacement=True)
+X_new = X[indices]
 
 
 plt.figure() 

@@ -22,7 +22,7 @@ if __name__ == "__main__":
         d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     if d == torch.device("cpu"):
         warnings.warn("No GPU device detected, using cpu instead", UserWarning)
-    dtype = torch.float32
+    dtype = torch.float64
 
     noise_sigma = torch.tensor(10, device=d, dtype=dtype)
     # noise_sigma = torch.tensor([[10, 0], [0, 10]], device=d, dtype=dtype)
@@ -70,16 +70,16 @@ if __name__ == "__main__":
     env = gym.make(ENV_NAME, render_mode="human")
     nx = 2
 
-    env.reset()
-    if downward_start:
-        env.state = env.unwrapped.state = [np.pi, 1]
+    # env.reset()
+    # if downward_start:
+    #     env.state = env.unwrapped.state = [np.pi, 1]
 
-    mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    start = time.time()
-    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=300)
-    print("Time:", time.time() - start)
+    # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    # start = time.time()
+    # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=300)
+    # print("Time:", time.time() - start)
 
     env.reset()
     if downward_start:
@@ -92,6 +92,6 @@ if __name__ == "__main__":
     total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=300)
     print("Time:", time.time() - start)
 
-    logger.info("Total reward %f", total_reward)
+    # logger.info("Total reward %f", total_reward)
 
     env.close()

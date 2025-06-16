@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
+
+# TODO, new samples should only come from existing datas used for density estimation"
+
 multivariate_normal = torch.distributions.MultivariateNormal(torch.zeros(2), torch.eye(2))
 X = multivariate_normal.sample((50000,)) # create data
 plt.figure()

@@ -142,8 +142,9 @@ class CUSTOM_MPPI():
             if (stage_counter % self.N == 0): # TODO test edge cases for division
                 kde = KernelDensity(bandwidth=0.5, kernel="gaussian")
                 kde.fit(state)
+                print(state.shape)
 
-                state_proposed = torch.distributions.Uniform(self.u_min*torch.ones((self.nx,)), self.u_max*torch.ones((self.nx,))).sample((self.K,))
+                state_proposed = torch.distributions.Uniform(self.u_min*torch.ones((self.nx,),device=self.device), self.u_max*torch.ones((self.nx,),device=self.device)).sample((self.K*100,)).to(self.device)
                 if state_proposed.shape[1] == 1:
                     score = kde.score_samples(state_proposed.unsqueeze(1)) # kde score samples calculate log(p(x))
                 else:
@@ -152,7 +153,7 @@ class CUSTOM_MPPI():
 
                 p_x = torch.exp(score) # calculate pdf of x
                 p_x = p_x / p_x.max()
-                p_x = torch.clamp(p_x, min=1e-5) # get rid of really small values to prevent really large values when taking the inverse
+                p_x = torch.clamp(p_x, min=1e-4) # get rid of really small values to prevent really large values when taking the inverse
 
                 inv_px = 1.0 / p_x**0.5 # calculate inverse of the pdf
                 inv_px = inv_px / inv_px.max()
@@ -164,7 +165,8 @@ class CUSTOM_MPPI():
                 else:
                     state_accepted = state_accepted
 
-                state = state_accepted
+                state = state_accepted[:self.K]
+                print(state.shape)
 
             rollout_cost = rollout_cost + running_cost
             stage_counter+=1

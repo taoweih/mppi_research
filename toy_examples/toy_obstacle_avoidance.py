@@ -12,8 +12,8 @@ import custom_mppi
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
-    TIMESTEPS = 200  # T
-    N_SAMPLES = 10000  # K
+    TIMESTEPS = 300  # T
+    N_SAMPLES = 8000  # K
     ACTION_LOW = -5.0
     ACTION_HIGH = 5.0
     # ENV = "U"
@@ -39,12 +39,12 @@ if __name__ == "__main__":
                 pygame.Rect(400, 200, 100, 50),
             ]
     elif ENV == "U":
-        start_position = [300,200]
+        start_position = [330,200]
         goal = torch.tensor([550.0, 350.0], device=d, dtype=dtype)
         obstacles = [
-                pygame.Rect(200, 100, 200, 10),
-                pygame.Rect(200, 300, 200, 10),
-                pygame.Rect(390, 110, 10, 190),
+                pygame.Rect(300, 150, 100, 10),
+                pygame.Rect(300, 250, 100, 10),
+                pygame.Rect(390, 110, 10,  90),
             ]
     obs_map = torch.zeros((500,200))
     for obs in obstacles:
@@ -112,18 +112,18 @@ if __name__ == "__main__":
     #     _,r,_,_,_ = env.step(action)
 
 
-    mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    start = time.time()
-    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=200)
-    print("Time:", time.time() - start)
+    # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    # start = time.time()
+    # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=200)
+    # print("Time:", time.time() - start)
 
 
     env.reset()
     env.state = env.unwrapped.state = start_position
 
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=50,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     start = time.time()

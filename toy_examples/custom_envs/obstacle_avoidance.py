@@ -50,12 +50,12 @@ class ObstacleAvoidanceEnv(gym.Env):
                 pygame.Rect(400, 200, 100, 50),
             ]
         elif self.env == "U":
-            self.state = np.array([300.0, 200.0]) #start position
+            self.state = np.array([330.0, 200.0]) #start position
             self.goal = np.array([500.0, 200.0])
             self.obstacles = [
-                pygame.Rect(200, 100, 200, 10),
-                pygame.Rect(200, 300, 200, 10),
-                pygame.Rect(390, 110, 10, 190),
+                pygame.Rect(300, 150, 100, 10),
+                pygame.Rect(300, 250, 100, 10),
+                pygame.Rect(390, 160, 10,  90),
             ]
     
         self.obs_map = np.zeros((600,400))
@@ -88,7 +88,7 @@ class ObstacleAvoidanceEnv(gym.Env):
             self.state = np.array([50.0, 50.0]) #start position
 
         elif self.env == "U":
-            self.state = np.array([300.0, 200.0]) #start position
+            self.state = np.array([330.0, 200.0]) #start position
 
         if self.render_mode == "human":
             self.render()

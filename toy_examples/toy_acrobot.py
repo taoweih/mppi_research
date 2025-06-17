@@ -41,7 +41,7 @@ dt_param = 0.2
 if __name__ == "__main__":
     ENV_NAME = "ContinuousAcrobot-v1"
     TIMESTEPS = 20  # T
-    N_SAMPLES = 200000  # K
+    N_SAMPLES = 10000  # K
     ACTION_LOW = -10.0
     ACTION_HIGH = 10.0
 
@@ -203,27 +203,27 @@ if __name__ == "__main__":
     env = gym.make(ENV_NAME, render_mode="human")
     nx = 4
 
-    env.reset()
-    if downward_start:
-        env.state = env.unwrapped.state = [0, 0, 0, 0]
+    # env.reset()
+    # if downward_start:
+    #     env.state = env.unwrapped.state = [0, 0, 0, 0]
 
-    # for _ in range(1000):
-    #     action = np.array([-2])
-    #     _,r,_,_,_ = env.step(action)
+    # # for _ in range(1000):
+    # #     action = np.array([-2])
+    # #     _,r,_,_,_ = env.step(action)
 
-    mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     
-    start = time.time()
-    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=500)
-    print("Time:", time.time() - start)
+    # start = time.time()
+    # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=500)
+    # print("Time:", time.time() - start)
 
     env.reset()
     if downward_start:
         env.state = env.unwrapped.state = [0, 0, 0, 0]
 
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=10,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     

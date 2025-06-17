@@ -2,6 +2,7 @@ import torch
 from torch.distributions.multivariate_normal import MultivariateNormal
 from arm_pytorch_utilities import handle_batch_input
 from torchkde import KernelDensity
+import time
 
 # Built based on the base MPPI implementation from pytorch_mppi form https://github.com/UM-ARM-Lab/pytorch_mppi/blob/master/src/pytorch_mppi/mppi.py
 
@@ -124,6 +125,7 @@ class CUSTOM_MPPI():
         :params perturbed_actions: Shape (K x T x nu).
 
         :returns rollout_cost: Shape (K).
+        :returns perturabed_actoions: modified perturbed actions
         '''
         K, T, nu = perturbed_actions.shape
         assert nu == self.nu
@@ -137,40 +139,51 @@ class CUSTOM_MPPI():
             u = perturbed_actions[:,t]
             next_state = self._dynamics(state, u, t)
             state = next_state # shape (K x nx)
-            running_cost = self._running_cost(state,u,t)
 
-            if (stage_counter % self.N == 0): # TODO test edge cases for division
-                kde = KernelDensity(bandwidth=0.5, kernel="gaussian")
+
+            if (stage_counter % self.N == 0 and stage_counter != 0): # TODO test edge cases for division
+                
+                start = time.time()
+
+                kde = KernelDensity(bandwidth=0.3, kernel="gaussian")
                 kde.fit(state)
-                print(state.shape)
 
-                state_proposed = torch.distributions.Uniform(self.u_min*torch.ones((self.nx,),device=self.device), self.u_max*torch.ones((self.nx,),device=self.device)).sample((self.K*100,)).to(self.device)
-                if state_proposed.shape[1] == 1:
-                    score = kde.score_samples(state_proposed.unsqueeze(1)) # kde score samples calculate log(p(x))
+
+                if state.shape[1] == 1:
+                    score = kde.score_samples(state.unsqueeze(1), batch_size=4096) # kde score samples calculate log(p(x))
                 else:
-                    score = kde.score_samples(state_proposed)
+                    score = kde.score_samples(state, batch_size=4096)
                 pass
 
                 p_x = torch.exp(score) # calculate pdf of x
-                p_x = p_x / p_x.max()
-                p_x = torch.clamp(p_x, min=1e-4) # get rid of really small values to prevent really large values when taking the inverse
 
-                inv_px = 1.0 / p_x**0.5 # calculate inverse of the pdf
-                inv_px = inv_px / inv_px.max()
+                inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
+                inv_px = inv_px / inv_px.sum()
 
-                rand_num = torch.rand_like(inv_px)
-                state_accepted = state_proposed[rand_num < inv_px] # Mask to accept points more with higher likelihood in the invense distribution
-                if state_accepted.shape[1] == 1:
-                    state_accepted = state_accepted.squeeze(1)
-                else:
-                    state_accepted = state_accepted
 
-                state = state_accepted[:self.K]
-                print(state.shape)
+                indices = torch.multinomial(inv_px, num_samples=self.K, replacement=True)
+                state_new = state[indices]
+                
+                perturbed_actions_new = perturbed_actions[indices]
+                perturbed_actions_new[:,t:] = self.noise_dist.sample((self.T -t,))
+   
+                rollout_cost_new = rollout_cost[indices]
+
+                
+
+                state = state_new
+                perturbed_actions = perturbed_actions_new
+                rollout_cost = rollout_cost_new
+                
+                # print(f"time in resample:{time.time() - start}")
+
+            running_cost = self._running_cost(state,u,t)
+                
 
             rollout_cost = rollout_cost + running_cost
             stage_counter+=1
-        return rollout_cost
+            noise = perturbed_actions - self.U
+        return rollout_cost, perturbed_actions, noise
     
     def compute_optimal_control_sequence(self,cost_total, noise):
         '''
@@ -195,6 +208,7 @@ class CUSTOM_MPPI():
 
         :returns control_input: Shape (nu).
         '''
+        # now = time.time()
         self.shift_nominal_trajectory()
 
         if not torch.is_tensor(state):
@@ -205,7 +219,7 @@ class CUSTOM_MPPI():
 
         # Generate samples of control input sequences and get rollout cost
         perturbed_actions, noise = self.get_perturbed_actions_and_noise()
-        rollout_cost = self.implement_rollouts(perturbed_actions)
+        rollout_cost, perturbed_actions, noise = self.implement_rollouts(perturbed_actions)
 
         # Control cost
         action_cost = self.lambda_ * noise @ self.noise_sigma_inv
@@ -218,6 +232,7 @@ class CUSTOM_MPPI():
         action = self.compute_optimal_control_sequence(cost_total, noise)
         self.U = self.U + action
         control_input = self.U[0]
+        # print(f"time per iteration: {time.time() - now}")
 
         return control_input      
 

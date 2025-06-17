@@ -14,7 +14,7 @@ import base_mppi
 if __name__ == "__main__":
     ENV_NAME = "Pendulum-v1" #source code at /opt/anaconda3/envs/mppi_research/lib/python3.10/site-packages/gymnasium/envs/classic_control/pendulum.py
     TIMESTEPS = 10  # T
-    N_SAMPLES = 1000 # K
+    N_SAMPLES = 10 # K
     ACTION_LOW = -2.0
     ACTION_HIGH = 2.0
 
@@ -83,28 +83,28 @@ if __name__ == "__main__":
     # print("Time:", time.time() - start)
 
 
+    # env.reset()
+    # if downward_start:
+    #     env.state = env.unwrapped.state = [np.pi, 1]
+
+    # mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    # start = time.time()    
+    # total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=300)
+    # print("Time:", time.time() - start)
+
+
+
     env.reset()
     if downward_start:
         env.state = env.unwrapped.state = [np.pi, 1]
 
-    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=2,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     start = time.time()    
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=300)
-    print("Time:", time.time() - start)
-
-
-
-    env.reset()
-    if downward_start:
-        env.state = env.unwrapped.state = [np.pi, 1]
-
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=5,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    start = time.time()    
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=300)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=1)
     print("Time:", time.time() - start)
 
     # logger.info("Total reward %f", total_reward)

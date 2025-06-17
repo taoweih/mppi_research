@@ -9,6 +9,7 @@ from pytorch_mppi import mppi
 import sys
 sys.path.append("..")
 import custom_mppi
+import base_mppi
 
 if __name__ == "__main__":
     ENV_NAME = "Pendulum-v1" #source code at /opt/anaconda3/envs/mppi_research/lib/python3.10/site-packages/gymnasium/envs/classic_control/pendulum.py
@@ -18,8 +19,8 @@ if __name__ == "__main__":
     ACTION_HIGH = 2.0
 
     d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if d == torch.device("cpu"):
-        d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    # if d == torch.device("cpu"):
+        # d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     if d == torch.device("cpu"):
         warnings.warn("No GPU device detected, using cpu instead", UserWarning)
     dtype = torch.float64
@@ -80,6 +81,20 @@ if __name__ == "__main__":
     # start = time.time()
     # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=300)
     # print("Time:", time.time() - start)
+
+
+    env.reset()
+    if downward_start:
+        env.state = env.unwrapped.state = [np.pi, 1]
+
+    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    start = time.time()    
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=300)
+    print("Time:", time.time() - start)
+
+
 
     env.reset()
     if downward_start:

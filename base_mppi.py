@@ -70,6 +70,7 @@ class BASE_MPPI():
         self.noise_sigma = noise_sigma.to(self.device) # variance
         self.noise_sigma_inv = torch.inverse(self.noise_sigma)
         self.noise_dist = MultivariateNormal(self.noise_mu,covariance_matrix=self.noise_sigma) # distribution to sample control input from
+        # self.noise_dist = torch.distributions.uniform.Uniform(self.u_min*torch.ones(self.nu, dtype=self.dtype), self.u_max*torch.ones(self.nu, dtype=self.dtype))
 
         # Control sequence: (T x nu)
         self.U = U_init

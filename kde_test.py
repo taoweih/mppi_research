@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # TODO, new samples should only come from existing datas used for density estimation"
 # TODO test this method on higher dimension data
 
-multivariate_normal = torch.distributions.MultivariateNormal(torch.zeros(1), torch.eye(1))
+multivariate_normal = torch.distributions.MultivariateNormal(torch.zeros(3), torch.eye(3))
 X = multivariate_normal.sample((50000,)) # create data
 plt.figure()
 if X.shape[1] == 1:
@@ -36,7 +36,7 @@ else:
 plt.title("from normal")
 plt.show()
 
-kde = KernelDensity(bandwidth=0.4, kernel='gaussian') # create kde object with isotropic bandwidth matrix
+kde = KernelDensity(bandwidth=0.3, kernel='gaussian') # create kde object with isotropic bandwidth matrix
 _ = kde.fit(X) # fit kde to data
 
 # X_new = torch.distributions.Uniform(-6,6).sample((1000,))

@@ -10,6 +10,7 @@ from tqdm import tqdm
 class CUSTOM_MPPI():
 
     def __init__(self, dynamics, running_cost, nx, noise_sigma, 
+                 terminal_cost = None,
                  noise_mu=None,
                  num_samples=100, 
                  time_steps=15, 
@@ -85,7 +86,10 @@ class CUSTOM_MPPI():
 
         self.F = dynamics
         self.running_cost = running_cost
+        self.terminal_cost = terminal_cost
         self.state = None
+        
+        self.k_states = None
     
     def reset(self):
         self.U = self.noise_dist.sample((self.T,))
@@ -136,6 +140,8 @@ class CUSTOM_MPPI():
 
         stage_counter = 0
         # rollout dynamics and calculate cost for T timesteps
+        k_states = []
+
         for t in range(T): 
             u = perturbed_actions[:,t]
             next_state = self._dynamics(state, u, t)
@@ -175,6 +181,8 @@ class CUSTOM_MPPI():
                 state = state_new
                 perturbed_actions = perturbed_actions_new
                 rollout_cost = rollout_cost_new
+
+            k_states.append(state)
                 
                 # print(f"time in resample:{time.time() - start}")
 
@@ -184,6 +192,9 @@ class CUSTOM_MPPI():
             rollout_cost = rollout_cost + running_cost
             stage_counter+=1
             noise = perturbed_actions - self.U
+
+        self.k_states = torch.stack(k_states, dim=1)
+
         return rollout_cost, perturbed_actions, noise
     
     def compute_optimal_control_sequence(self,cost_total, noise):
@@ -226,8 +237,13 @@ class CUSTOM_MPPI():
         action_cost = self.lambda_ * noise @ self.noise_sigma_inv
         control_cost = torch.sum(self.U * action_cost, dim=(1, 2))
 
+        # Terminal cost
+        terminal_cost = 0
+        if self.terminal_cost is not None:
+            terminal_cost = self.terminal_cost(self.k_states[:,-1])
+
         # Combine all the cost
-        cost_total = cost_total + control_cost + rollout_cost
+        cost_total = cost_total + control_cost + rollout_cost + terminal_cost
 
         # Combine to find one optimal trajectory based on total cost
         action = self.compute_optimal_control_sequence(cost_total, noise)
@@ -235,7 +251,7 @@ class CUSTOM_MPPI():
         control_input = self.U[0]
         # print(f"time per iteration: {time.time() - now}")
 
-        return control_input      
+        return control_input, self.k_states      
 
 def run_mppi(mppi, env, iter=100, render = True):
     '''
@@ -249,8 +265,9 @@ def run_mppi(mppi, env, iter=100, render = True):
     
     for i in tqdm(range(iter)):
         state = env.unwrapped.state.copy() # current state of the robot
-        action = mppi.command(state) # get the control input from mppi based on current state
+        action, states = mppi.command(state) # get the control input from mppi based on current state
         _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)
         if render:
+            env.set_render_states(states.cpu().numpy())
             env.render()
     return

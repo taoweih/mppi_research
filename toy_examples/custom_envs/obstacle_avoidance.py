@@ -21,6 +21,7 @@ class ObstacleAvoidanceEnv(gym.Env):
 
     def __init__(self, render_mode: Optional[str] = None, env = "default"):
         self.max_speed = 8
+        self.max_acceleration = 3
 
         self.render_mode = render_mode
 
@@ -33,28 +34,28 @@ class ObstacleAvoidanceEnv(gym.Env):
 
 
         self.action_space = spaces.Box(
-            low=-0, high=600, shape=(2,), dtype=np.float32
+            low=-1*self.max_acceleration, high=self.max_acceleration, shape=(2,), dtype=np.float32
         )
         self.observation_space = spaces.Box(
-        low=np.array([0, 0], dtype=np.float32),
-        high=np.array([self.width, self.height], dtype=np.float32),
+        low=np.array([0, 0, -1*self.max_speed, -1*self.max_speed], dtype=np.float32),
+        high=np.array([self.width, self.height, self.max_speed, self.max_speed], dtype=np.float32),
         dtype=np.float32)
 
         self.env = env
 
         if self.env == "default":
-            self.state = np.array([50.0, 50.0]) #start position
+            self.state = np.array([50.0, 50.0, 0, 0]) #start position
             self.goal = np.array([550.0, 350.0])
             self.obstacles = [
                 pygame.Rect(200, 100, 100, 300),
                 pygame.Rect(400, 200, 100, 50),
             ]
         elif self.env == "U":
-            self.state = np.array([330.0, 200.0]) #start position
+            self.state = np.array([330.0, 200.0, 0 ,0]) #start position
             self.goal = np.array([550.0, 200.0])
             self.obstacles = [
-                pygame.Rect(300, 150, 100, 10),
-                pygame.Rect(300, 250, 100, 10),
+                pygame.Rect(200, 150, 200, 10),
+                pygame.Rect(200, 250, 200, 10),
                 pygame.Rect(390, 160, 10,  90),
             ]
     
@@ -62,19 +63,24 @@ class ObstacleAvoidanceEnv(gym.Env):
         for obs in self.obstacles:
             self.obs_map[obs.left:obs.left + obs.width,obs.top:obs.top + obs.height] = 1
 
-    def step(self, u):
-        car_x, car_y = self.state
+        self.render_states = None
 
-        u = np.clip(u, -10, 10)
-        new_x = car_x + u[0]
-        new_y = car_y + u[1]
+    def step(self, u):
+        car_x, car_y, speed_x, speed_y = self.state
+        u = np.clip(u, -1*self.max_acceleration, self.max_acceleration)
+        speed_x = np.clip(speed_x + u[0], -1*self.max_speed, self.max_speed)
+        speed_y = np.clip(speed_y + u[1], -1*self.max_speed, self.max_speed)
+
+        new_x = car_x + speed_x
+        new_y = car_y + speed_y
+
         new_x = int(new_x)
         new_y = int(new_y)
         if new_x < 0 or new_x > 599 or new_y < 0 or new_y > 399 or self.obs_map[new_x,new_y] == 1 :
             new_x = car_x
             new_y = car_y
 
-        self.state = np.array([new_x, new_y])
+        self.state = np.array([new_x, new_y, speed_x,speed_y])
 
         if self.render_mode == "human":
             self.render()
@@ -85,10 +91,10 @@ class ObstacleAvoidanceEnv(gym.Env):
     
     def reset(self, seed=None, options=None):
         if self.env == "default":
-            self.state = np.array([50.0, 50.0]) #start position
+            self.state = np.array([50.0, 50.0, 0, 0]) #start position
 
         elif self.env == "U":
-            self.state = np.array([330.0, 200.0]) #start position
+            self.state = np.array([330.0, 200.0, 0, 0]) #start position
 
         if self.render_mode == "human":
             self.render()
@@ -96,10 +102,20 @@ class ObstacleAvoidanceEnv(gym.Env):
 
 
     def _get_obs(self):
-        x, y = self.state
-        return np.array([x, y], dtype=np.float32)
+        x, y, dx, dy= self.state
+        return np.array([x, y, dx, dy], dtype=np.float32)
+    
+    def set_render_states(self, states):
+        self.render_states = states[:,:,0:2].astype("int")
 
     def render(self):
+        freq = 300
+        counter = 0
+        if self.render_states is None:
+            states = np.array([[[0, 0],[10,10]]])
+        else:
+            states= self.render_states
+
         if self.render_mode is None:
             assert self.spec is not None
             gym.logger.warn(
@@ -141,7 +157,13 @@ class ObstacleAvoidanceEnv(gym.Env):
 
         overlay.fill((0, 0, 0, 0))
 
-        pygame.draw.circle(overlay, (0, 0, 255), self.state, 8)
+        pygame.draw.circle(overlay, (0, 0, 255), self.state[0:2], 8)
+        for traj in states:
+            if counter % freq == 0:
+                for i in range(len(traj)):
+                    if i > 0:
+                        pygame.draw.line(overlay, (0,0,0), traj[i-1], traj[i], 1)
+            counter +=1
        
         self.screen.blit(background, (0, 0))
         self.screen.blit(overlay, (0, 0))

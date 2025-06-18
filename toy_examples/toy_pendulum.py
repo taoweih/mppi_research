@@ -91,7 +91,7 @@ if __name__ == "__main__":
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
  
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
+    total_reward = base_mppi.run_mppi(mppi_gym, env, iter=100)
 
 
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
 
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=100)
 
 
     # logger.info("Total reward %f", total_reward)

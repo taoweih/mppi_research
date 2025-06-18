@@ -42,7 +42,7 @@ dt_param = 0.2
 if __name__ == "__main__":
     ENV_NAME = "ContinuousAcrobot-v1"
     TIMESTEPS = 20  # T
-    N_SAMPLES = 10000  # K
+    N_SAMPLES = 20000  # K
     ACTION_LOW = -10.0
     ACTION_HIGH = 10.0
 
@@ -212,11 +212,11 @@ if __name__ == "__main__":
     if downward_start:
         env.state = env.unwrapped.state = [0, 0, 0, 0]
 
-    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     
-    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=500)
+    total_reward = base_mppi.run_mppi(mppi_gym, env, iter=500)
 
     env.reset()
     if downward_start:

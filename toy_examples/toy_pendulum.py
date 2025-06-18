@@ -13,8 +13,8 @@ import base_mppi
 
 if __name__ == "__main__":
     ENV_NAME = "Pendulum-v1" #source code at /opt/anaconda3/envs/mppi_research/lib/python3.10/site-packages/gymnasium/envs/classic_control/pendulum.py
-    TIMESTEPS = 10  # T
-    N_SAMPLES = 10 # K
+    TIMESTEPS = 20  # T
+    N_SAMPLES = 1000 # K
     ACTION_LOW = -2.0
     ACTION_HIGH = 2.0
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         warnings.warn("No GPU device detected, using cpu instead", UserWarning)
     dtype = torch.float64
 
-    noise_sigma = torch.tensor(10, device=d, dtype=dtype)
+    noise_sigma = torch.tensor(1, device=d, dtype=dtype)
     # noise_sigma = torch.tensor([[10, 0], [0, 10]], device=d, dtype=dtype)
     lambda_ = 1.
 
@@ -83,16 +83,16 @@ if __name__ == "__main__":
     # print("Time:", time.time() - start)
 
 
-    # env.reset()
-    # if downward_start:
-    #     env.state = env.unwrapped.state = [np.pi, 1]
+    env.reset()
+    if downward_start:
+        env.state = env.unwrapped.state = [np.pi, 1]
 
-    # mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
-    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    # start = time.time()    
-    # total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=300)
-    # print("Time:", time.time() - start)
+    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    start = time.time()    
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
+    print("Time:", time.time() - start)
 
 
 
@@ -100,11 +100,11 @@ if __name__ == "__main__":
     if downward_start:
         env.state = env.unwrapped.state = [np.pi, 1]
 
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=2,
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=5,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     start = time.time()    
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=1)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
     print("Time:", time.time() - start)
 
     # logger.info("Total reward %f", total_reward)

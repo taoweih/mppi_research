@@ -12,8 +12,8 @@ import custom_mppi
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
-    TIMESTEPS = 300  # T
-    N_SAMPLES = 8000  # K
+    TIMESTEPS = 800  # T
+    N_SAMPLES = 1000  # K
     ACTION_LOW = -5.0
     ACTION_HIGH = 5.0
     # ENV = "U"
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     def running_cost(state, action):
         cost = 0
-        distance_sq = torch.sum((state - goal)**4, dim=1)
+        distance_sq = torch.sum((state - goal)**2, dim=1)
         cost += distance_sq
 
         for obs in obstacles:
@@ -90,7 +90,7 @@ if __name__ == "__main__":
             y_in = (state[:, 1] >= obs.top) & (state[:, 1] <= obs.top + obs.height)
             collided = x_in & y_in
 
-            cost += collided.float() *1e15  # penalty
+            cost += collided.float() *1e17  # penalty
 
         return cost 
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     env.reset()
     env.state = env.unwrapped.state = start_position
 
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=50,
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=100,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     start = time.time()

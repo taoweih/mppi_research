@@ -142,7 +142,7 @@ class CUSTOM_MPPI():
 
 
             if (stage_counter % self.N == 0 and stage_counter != 0): # TODO test edge cases for division
-                
+
                 start = time.time()
 
                 kde = KernelDensity(bandwidth=0.3, kernel="gaussian")
@@ -163,10 +163,14 @@ class CUSTOM_MPPI():
 
                 indices = torch.multinomial(inv_px, num_samples=self.K, replacement=True)
                 state_new = state[indices]
-                
+                # print(f"----------------------")
+                # print(f"state: {state}")
+                # print(f"indices:{indices}")
+                # print(f"state_new:{state_new}")   
                 perturbed_actions_new = perturbed_actions[indices]
-                perturbed_actions_new[:,t:] = self.noise_dist.sample((self.T -t,))
-   
+                # print(f"perturbed_actions:{perturbed_actions}")
+                perturbed_actions_new[:,t:] = self.U[t:] + self.noise_dist.sample((self.K, self.T -t))
+                # print(f"perturbed_actions_new:{perturbed_actions_new}")
                 rollout_cost_new = rollout_cost[indices]
 
                 

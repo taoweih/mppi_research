@@ -13,7 +13,7 @@ import base_mppi
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
-    TIMESTEPS = 80  # T
+    TIMESTEPS = 70  # T
     N_SAMPLES = 5000  # K
     ACTION_LOW = -3.0
     ACTION_HIGH = 3.0

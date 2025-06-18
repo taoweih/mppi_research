@@ -3,6 +3,7 @@ from torch.distributions.multivariate_normal import MultivariateNormal
 from arm_pytorch_utilities import handle_batch_input
 from torchkde import KernelDensity
 import time
+from tqdm import tqdm
 
 # Built based on the base MPPI implementation from pytorch_mppi form https://github.com/UM-ARM-Lab/pytorch_mppi/blob/master/src/pytorch_mppi/mppi.py
 
@@ -157,20 +158,16 @@ class CUSTOM_MPPI():
 
                 p_x = torch.exp(score) # calculate pdf of x
 
-                inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
+                inv_px = (1.0 / p_x+1e-5)**1.3 # calculate inverse of the pdf
                 inv_px = inv_px / inv_px.sum()
 
 
                 indices = torch.multinomial(inv_px, num_samples=self.K, replacement=True)
                 state_new = state[indices]
-                # print(f"----------------------")
-                # print(f"state: {state}")
-                # print(f"indices:{indices}")
-                # print(f"state_new:{state_new}")   
+
                 perturbed_actions_new = perturbed_actions[indices]
-                # print(f"perturbed_actions:{perturbed_actions}")
                 perturbed_actions_new[:,t:] = self.U[t:] + self.noise_dist.sample((self.K, self.T -t))
-                # print(f"perturbed_actions_new:{perturbed_actions_new}")
+
                 rollout_cost_new = rollout_cost[indices]
 
                 
@@ -250,7 +247,7 @@ def run_mppi(mppi, env, iter=100, render = True):
     :params render: whether to display the gym environment
     '''
     
-    for i in range(iter):
+    for i in tqdm(range(iter)):
         state = env.unwrapped.state.copy() # current state of the robot
         action = mppi.command(state) # get the control input from mppi based on current state
         _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)

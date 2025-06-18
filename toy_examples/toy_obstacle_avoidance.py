@@ -8,16 +8,17 @@ import custom_envs
 import sys
 sys.path.append("..")
 import custom_mppi
+import base_mppi
 
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
     TIMESTEPS = 800  # T
-    N_SAMPLES = 1000  # K
+    N_SAMPLES = 5000  # K
     ACTION_LOW = -5.0
     ACTION_HIGH = 5.0
-    # ENV = "U"
-    ENV = "default"
+    ENV = "U"
+    # ENV = "default"
 
     d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):
@@ -40,13 +41,13 @@ if __name__ == "__main__":
             ]
     elif ENV == "U":
         start_position = [330,200]
-        goal = torch.tensor([550.0, 350.0], device=d, dtype=dtype)
+        goal = torch.tensor([550.0, 200.0], device=d, dtype=dtype)
         obstacles = [
                 pygame.Rect(300, 150, 100, 10),
                 pygame.Rect(300, 250, 100, 10),
-                pygame.Rect(390, 110, 10,  90),
+                pygame.Rect(390, 160, 10,  90),
             ]
-    obs_map = torch.zeros((500,200))
+    obs_map = torch.zeros((600,400))
     for obs in obstacles:
         obs_map[obs.left:obs.left + obs.width,obs.top:obs.top + obs.height] = 1
 
@@ -103,8 +104,6 @@ if __name__ == "__main__":
     env = gym.make(ENV_NAME, render_mode="human", env = ENV)
     nx = 2
 
-    env.reset()
-    env.state = env.unwrapped.state = start_position
 
     
     # for _ in range(1000):
@@ -112,22 +111,29 @@ if __name__ == "__main__":
     #     _,r,_,_,_ = env.step(action)
 
 
+    # env.reset()
+    # env.state = env.unwrapped.state = start_position
+
     # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
     #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
     #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    # start = time.time()
     # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=200)
-    # print("Time:", time.time() - start)
+
+    env.reset()
+    env.state = env.unwrapped.state = start_position
+
+    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=400)
 
 
     env.reset()
     env.state = env.unwrapped.state = start_position
 
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=100,
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=50,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    start = time.time()
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
-    print("Time:", time.time() - start)
+    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=400)
 
     env.close()

@@ -1,7 +1,7 @@
 import torch
 from torch.distributions.multivariate_normal import MultivariateNormal
 from arm_pytorch_utilities import handle_batch_input
-
+from tqdm import tqdm
 # Built based on the base MPPI implementation from pytorch_mppi form https://github.com/UM-ARM-Lab/pytorch_mppi/blob/master/src/pytorch_mppi/mppi.py
 
 class BASE_MPPI():
@@ -197,7 +197,7 @@ def run_mppi(mppi, env, iter=100, render = True):
     :params render: whether to display the gym environment
     '''
     
-    for i in range(iter):
+    for i in tqdm(range(iter)):
         state = env.unwrapped.state.copy() # current state of the robot
         action = mppi.command(state) # get the control input from mppi based on current state
         _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)

@@ -11,6 +11,7 @@ import custom_envs
 import sys
 sys.path.append("..")
 import custom_mppi
+import base_mppi
 
 # gym_log.set_level(gym_log.INFO)
 # logger = logging.getLogger(__name__)
@@ -203,21 +204,19 @@ if __name__ == "__main__":
     env = gym.make(ENV_NAME, render_mode="human")
     nx = 4
 
-    # env.reset()
-    # if downward_start:
-    #     env.state = env.unwrapped.state = [0, 0, 0, 0]
+    # for _ in range(1000):
+    #     action = np.array([-2])
+    #     _,r,_,_,_ = env.step(action)
 
-    # # for _ in range(1000):
-    # #     action = np.array([-2])
-    # #     _,r,_,_,_ = env.step(action)
+    env.reset()
+    if downward_start:
+        env.state = env.unwrapped.state = [0, 0, 0, 0]
 
-    # mppi_gym = mppi.MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
-    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, horizon=TIMESTEPS,
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     
-    # start = time.time()
-    # total_reward = mppi.run_mppi(mppi_gym, env, train, iter=500)
-    # print("Time:", time.time() - start)
+    total_reward = mppi.run_mppi(mppi_gym, env, train, iter=500)
 
     env.reset()
     if downward_start:
@@ -227,9 +226,9 @@ if __name__ == "__main__":
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     
-    start = time.time()
+
     total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=500)
-    print("Time:", time.time() - start)
+   
 
 
     env.close()

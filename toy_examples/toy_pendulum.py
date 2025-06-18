@@ -90,9 +90,9 @@ if __name__ == "__main__":
     mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    start = time.time()    
+ 
     total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
-    print("Time:", time.time() - start)
+
 
 
 
@@ -103,9 +103,9 @@ if __name__ == "__main__":
     mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=5,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-    start = time.time()    
+
     total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)
-    print("Time:", time.time() - start)
+
 
     # logger.info("Total reward %f", total_reward)
 

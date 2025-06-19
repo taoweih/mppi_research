@@ -13,8 +13,8 @@ import base_mppi
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
-    TIMESTEPS = 70  # T
-    N_SAMPLES = 5000  # K
+    TIMESTEPS = 60  # T
+    N_SAMPLES = 10000  # K
     ACTION_LOW = -3.0
     ACTION_HIGH = 3.0
     ENV = "U"
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         return cost 
     
     def terminal_cost(state):
-        cost = torch.sum((state[:,0:2] - goal)**4, dim=1)
+        cost = torch.sum((state[:,0:2] - goal)**8, dim=1)
         return cost
 
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     env.reset()
     env.state = env.unwrapped.state = start_position
 
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=20,
+    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=10,
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=200)

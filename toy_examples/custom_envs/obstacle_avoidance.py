@@ -64,6 +64,7 @@ class ObstacleAvoidanceEnv(gym.Env):
             self.obs_map[obs.left:obs.left + obs.width,obs.top:obs.top + obs.height] = 1
 
         self.render_states = None
+        self.render_policy = None
 
     def step(self, u):
         car_x, car_y, speed_x, speed_y = self.state
@@ -105,16 +106,15 @@ class ObstacleAvoidanceEnv(gym.Env):
         x, y, dx, dy= self.state
         return np.array([x, y, dx, dy], dtype=np.float32)
     
-    def set_render_states(self, states):
+    def set_render_info(self, states, policy):
         self.render_states = states[:,:,0:2].astype("int")
+        self.render_policy = policy[:,0:2].astype("int")
 
     def render(self):
-        freq = 300
+        freq = 1000
         counter = 0
-        if self.render_states is None:
-            states = np.array([[[0, 0],[10,10]]])
-        else:
-            states= self.render_states
+
+        states= self.render_states
 
         if self.render_mode is None:
             assert self.spec is not None
@@ -158,12 +158,18 @@ class ObstacleAvoidanceEnv(gym.Env):
         overlay.fill((0, 0, 0, 0))
 
         pygame.draw.circle(overlay, (0, 0, 255), self.state[0:2], 8)
-        for traj in states:
-            if counter % freq == 0:
-                for i in range(len(traj)):
-                    if i > 0:
-                        pygame.draw.line(overlay, (0,0,0), traj[i-1], traj[i], 1)
-            counter +=1
+        if states is not None:
+            for traj in states:
+                if counter % freq == 0:
+                    for i in range(len(traj)):
+                        if i > 0:
+                            pygame.draw.line(overlay, (0,0,0), traj[i-1], traj[i], 1)
+                counter +=1
+        
+        if self.render_policy is not None:
+            for i in range(len(self.render_policy)):
+                if i > 0:
+                    pygame.draw.line(overlay, (255,0,255), self.render_policy[i-1], self.render_policy[i], 1)
        
         self.screen.blit(background, (0, 0))
         self.screen.blit(overlay, (0, 0))

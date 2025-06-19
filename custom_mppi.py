@@ -164,7 +164,7 @@ class CUSTOM_MPPI():
 
                 p_x = torch.exp(score) # calculate pdf of x
 
-                inv_px = (1.0 / p_x+1e-5)**1.3 # calculate inverse of the pdf
+                inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
                 inv_px = inv_px / inv_px.sum()
 
 
@@ -251,7 +251,17 @@ class CUSTOM_MPPI():
         control_input = self.U[0]
         # print(f"time per iteration: {time.time() - now}")
 
-        return control_input, self.k_states      
+        # Unroll once for the policy for visualization
+        policy_states = []
+        state = self.state.unsqueeze(0)
+        for t in range(self.T): 
+            u = self.U[t].unsqueeze(0)
+            next_state = self._dynamics(state, u, t)
+            state = next_state
+            policy_states.append(state.squeeze(0))
+        policy_states = torch.stack(policy_states, dim=0)
+
+        return control_input, self.k_states, policy_states     
 
 def run_mppi(mppi, env, iter=100, render = True):
     '''
@@ -265,9 +275,9 @@ def run_mppi(mppi, env, iter=100, render = True):
     
     for i in tqdm(range(iter)):
         state = env.unwrapped.state.copy() # current state of the robot
-        action, states = mppi.command(state) # get the control input from mppi based on current state
+        action, states, policy = mppi.command(state) # get the control input from mppi based on current state
         _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)
         if render:
-            env.set_render_states(states.cpu().numpy())
+            env.set_render_info(states.cpu().numpy(), policy.cpu().numpy())
             env.render()
     return

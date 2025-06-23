@@ -13,6 +13,8 @@ sys.path.append("..")
 import custom_mppi
 import base_mppi
 
+from tqdm import tqdm
+
 # gym_log.set_level(gym_log.INFO)
 # logger = logging.getLogger(__name__)
 # logging.basicConfig(level=logging.DEBUG,
@@ -208,15 +210,15 @@ if __name__ == "__main__":
     #     action = np.array([-2])
     #     _,r,_,_,_ = env.step(action)
 
-    env.reset()
-    if downward_start:
-        env.state = env.unwrapped.state = [0, 0, 0, 0]
+    # env.reset()
+    # if downward_start:
+    #     env.state = env.unwrapped.state = [0, 0, 0, 0]
 
-    mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+    # mppi_gym = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, num_samples=N_SAMPLES, time_steps=TIMESTEPS,
+    #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+    #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     
-    total_reward = base_mppi.run_mppi(mppi_gym, env, iter=500)
+    # total_reward = base_mppi.run_mppi(mppi_gym, env, iter=500)
 
     env.reset()
     if downward_start:
@@ -226,9 +228,13 @@ if __name__ == "__main__":
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     
+    
+    for i in tqdm(range(500)):
+        state = env.unwrapped.state.copy() # current state of the robot
+        action, states, policy = mppi_gym.command(state) # get the control input from mppi based on current state
+        _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)
 
-    total_reward = custom_mppi.run_mppi(mppi_gym, env, iter=500)
-   
+        env.render()
 
 
     env.close()

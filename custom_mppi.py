@@ -4,12 +4,17 @@ from arm_pytorch_utilities import handle_batch_input
 from torchkde import KernelDensity
 import time
 from tqdm import tqdm
+import mujoco
 
 # Built based on the base MPPI implementation from pytorch_mppi form https://github.com/UM-ARM-Lab/pytorch_mppi/blob/master/src/pytorch_mppi/mppi.py
+
+NUM_THREAD = 32
 
 class CUSTOM_MPPI():
 
     def __init__(self, dynamics, running_cost, nx, noise_sigma, 
+                 use_mujoco_dynamics = False,
+                 model = None,
                  terminal_cost = None,
                  noise_mu=None,
                  num_samples=100, 
@@ -90,16 +95,26 @@ class CUSTOM_MPPI():
         self.state = None
         
         self.k_states = None
+
+        self.use_mujoco_dynamics = use_mujoco_dynamics
+
+        if use_mujoco_dynamics:
+            self.model = model
+            self.model.opt.timestep = 0.01
+            self.data = [mujoco.MjData(self.model) for _ in range(NUM_THREAD)]
     
     def reset(self):
         self.U = self.noise_dist.sample((self.T,))
 
     #handle parallel dynamics and running cost function
-    @handle_batch_input(n=1)
+    # @handle_batch_input(n=1)
     def _dynamics(self,state,u,t):
-        return self.F(state,u)
+        if self.use_mujoco_dynamics:
+            return self.F(state, u, self.model, self.data)
+        else:
+            return self.F(state,u)
     
-    @handle_batch_input(n=1)
+    # @handle_batch_input(n=1)
     def _running_cost(self,state,u,t):
         return self.running_cost(state,u)
     
@@ -144,43 +159,45 @@ class CUSTOM_MPPI():
 
         for t in range(T): 
             u = perturbed_actions[:,t]
+            now = time.time()
             next_state = self._dynamics(state, u, t)
+            # print(f"time in each rollout:{time.time() - now}")
             state = next_state # shape (K x nx)
 
 
-            if (stage_counter % self.N == 0 and stage_counter != 0): # TODO test edge cases for division
+            # if (stage_counter % self.N == 0 and stage_counter != 0): # TODO test edge cases for division
 
-                start = time.time()
+            #     start = time.time()
 
-                kde = KernelDensity(bandwidth=0.3, kernel="gaussian")
-                kde.fit(state)
-
-
-                if state.shape[1] == 1:
-                    score = kde.score_samples(state.unsqueeze(1), batch_size=4096) # kde score samples calculate log(p(x))
-                else:
-                    score = kde.score_samples(state, batch_size=4096)
-                pass
-
-                p_x = torch.exp(score) # calculate pdf of x
-
-                inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
-                inv_px = inv_px / inv_px.sum()
+            #     kde = KernelDensity(bandwidth=0.3, kernel="gaussian")
+            #     kde.fit(state)
 
 
-                indices = torch.multinomial(inv_px, num_samples=self.K, replacement=True)
-                state_new = state[indices]
+            #     if state.shape[1] == 1:
+            #         score = kde.score_samples(state.unsqueeze(1), batch_size=4096) # kde score samples calculate log(p(x))
+            #     else:
+            #         score = kde.score_samples(state, batch_size=4096)
+            #     pass
 
-                perturbed_actions_new = perturbed_actions[indices]
-                perturbed_actions_new[:,t:] = self.U[t:] + self.noise_dist.sample((self.K, self.T -t))
+            #     p_x = torch.exp(score) # calculate pdf of x
 
-                rollout_cost_new = rollout_cost[indices]
+            #     inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
+            #     inv_px = inv_px / inv_px.sum()
+
+
+            #     indices = torch.multinomial(inv_px, num_samples=self.K, replacement=True)
+            #     state_new = state[indices]
+
+            #     perturbed_actions_new = perturbed_actions[indices]
+            #     perturbed_actions_new[:,t:] = self.U[t:] + self.noise_dist.sample((self.K, self.T -t))
+
+            #     rollout_cost_new = rollout_cost[indices]
 
                 
 
-                state = state_new
-                perturbed_actions = perturbed_actions_new
-                rollout_cost = rollout_cost_new
+            #     state = state_new
+            #     perturbed_actions = perturbed_actions_new
+            #     rollout_cost = rollout_cost_new
 
             k_states.append(state)
                 
@@ -233,6 +250,7 @@ class CUSTOM_MPPI():
         perturbed_actions, noise = self.get_perturbed_actions_and_noise()
         rollout_cost, perturbed_actions, noise = self.implement_rollouts(perturbed_actions)
 
+
         # Control cost
         action_cost = self.lambda_ * noise @ self.noise_sigma_inv
         control_cost = torch.sum(self.U * action_cost, dim=(1, 2))
@@ -248,18 +266,18 @@ class CUSTOM_MPPI():
         # Combine to find one optimal trajectory based on total cost
         action = self.compute_optimal_control_sequence(cost_total, noise)
         self.U = self.U + action
-        control_input = self.U[0]
+        control_input = self.U
         # print(f"time per iteration: {time.time() - now}")
 
-        # Unroll once for the policy for visualization
+        # # Unroll once for the policy for visualization
         policy_states = []
-        state = self.state.unsqueeze(0)
-        for t in range(self.T): 
-            u = self.U[t].unsqueeze(0)
-            next_state = self._dynamics(state, u, t)
-            state = next_state
-            policy_states.append(state.squeeze(0))
-        policy_states = torch.stack(policy_states, dim=0)
+        # state = self.state.unsqueeze(0)
+        # for t in range(self.T): 
+        #     u = self.U[t].unsqueeze(0)
+        #     next_state = self._dynamics(state, u, t)
+        #     state = next_state
+        #     policy_states.append(state.squeeze(0))
+        # policy_states = torch.stack(policy_states, dim=0)
 
         return control_input, self.k_states, policy_states     
 

@@ -7,6 +7,7 @@ from tqdm import tqdm
 class BASE_MPPI():
 
     def __init__(self, dynamics, running_cost, nx, noise_sigma, 
+                 terminal_cost = None,
                  noise_mu=None,
                  num_samples=100, 
                  time_steps=15, 
@@ -81,6 +82,7 @@ class BASE_MPPI():
         self.F = dynamics
         self.running_cost = running_cost
         self.state = None
+        self.terminal_cost = terminal_cost
     
     def reset(self):
         self.U = self.noise_dist.sample((self.T,))

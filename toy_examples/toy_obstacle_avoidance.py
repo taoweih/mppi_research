@@ -13,8 +13,8 @@ import base_mppi
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
-    TIMESTEPS = 60  # T
-    N_SAMPLES = 10000  # K
+    TIMESTEPS = 80  # T
+    N_SAMPLES = 500  # K
     ACTION_LOW = -3.0
     ACTION_HIGH = 3.0
     ENV = "U"
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):
         d = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    # d = torch.device("cpu")
+    d = torch.device("cpu")
     if d == torch.device("cpu"):
         warnings.warn("No GPU device detected, using cpu instead", UserWarning)
     dtype = torch.float32

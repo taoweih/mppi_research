@@ -48,9 +48,9 @@ def terminal_cost(state):
     cost = 0
     return cost
 
-mppi = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=10,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+# mppi = base_mppi.BASE_MPPI(dynamics, running_cost, nx, noise_sigma, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=10,
+#                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+#                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
 
 with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():

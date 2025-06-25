@@ -1,36 +1,27 @@
-# import torch
-# import isaacsim
-# from isaacsim import SimulationApp
-# simulation_app = SimulationApp({"headless": False})
-# from omni.isaac.lab.sim import SimulationContext
-# from omni.isaac.lab.envs import make
+import isaacsim
+import isaaclab
 
-# import time
+from omni.isaac.kit import SimulationApp
+simulation_app = SimulationApp({"headless": False})
 
-# env = make("Isaac-Cartpole-v0")
+from omni.isaac.core import World
+from omni.isaac.core.utils.mjcf import add_mjcf_asset
 
-# env.reset()
+import numpy as np
 
-# nu = env.action_shape[0]
-# action = torch.zeros((1,nu), device=env.device)
+world = World()
+world.scene.add_default_ground_plane()
 
-# for _ in range(200000):
-#     env.step(action)
+prim_path = "/World/go2"
+mjcf_path = "mujoco_menagerie/unitree_go2/go2.xml"
+add_mjcf_asset(prim_path,mjcf_path)
 
-#     env.render()
-#     time.sleep(env.sim.dt)
+world.reset()
+go2 = world.scene.get_object("go2")
 
-# env.close()
-# simulation_app.close()
+for _ in range(10000):
+    world.step(render=True)
 
-
-from isaacsim import SimulationApp
-app = SimulationApp({"headless": True})
-try:
-    from omni.isaac.lab.sim import SimulationContext
-    print("✅ omni.isaac.lab is available!")
-except Exception as e:
-    print("❌ Failed to import omni.isaac.lab:", e)
-app.close()
+simulation_app.close()
 
 

@@ -4,17 +4,16 @@ from arm_pytorch_utilities import handle_batch_input
 from torchkde import KernelDensity
 import time
 from tqdm import tqdm
-import mujoco
+import jax.numpy as jnp
+import jax
 
 # Built based on the base MPPI implementation from pytorch_mppi form https://github.com/UM-ARM-Lab/pytorch_mppi/blob/master/src/pytorch_mppi/mppi.py
 
-NUM_THREAD = 32
 
 class CUSTOM_MPPI():
 
     def __init__(self, dynamics, running_cost, nx, noise_sigma, 
-                 use_mujoco_dynamics = False,
-                 model = None,
+                 use_mujoco_physics = False,
                  terminal_cost = None,
                  noise_mu=None,
                  num_samples=100, 
@@ -96,27 +95,31 @@ class CUSTOM_MPPI():
         
         self.k_states = None
 
-        self.use_mujoco_dynamics = use_mujoco_dynamics
-
-        if use_mujoco_dynamics:
-            self.model = model
-            self.model.opt.timestep = 0.01
-            self.data = [mujoco.MjData(self.model) for _ in range(NUM_THREAD)]
+        self.use_mujoco_physics = use_mujoco_physics
     
     def reset(self):
         self.U = self.noise_dist.sample((self.T,))
 
-    #handle parallel dynamics and running cost function
+    # handle parallel dynamics and running cost function
     # @handle_batch_input(n=1)
     def _dynamics(self,state,u,t):
-        if self.use_mujoco_dynamics:
-            return self.F(state, u, self.model, self.data)
+        if self.use_mujoco_physics:
+            state = jnp.array(state.cpu().numpy())
+            u = jnp.array(u.cpu().numpy())
+            state_next = self.F(state,u)
+            return torch.from_numpy(jax.device_get(state_next).copy()).to(self.device)
         else:
             return self.F(state,u)
     
     # @handle_batch_input(n=1)
     def _running_cost(self,state,u,t):
-        return self.running_cost(state,u)
+        if self.use_mujoco_physics:
+            state = jnp.array(state.cpu().numpy())
+            u = jnp.array(u.cpu().numpy())
+            cost = self.running_cost(state,u)
+            return torch.from_numpy(jax.device_get(cost).copy()).to(self.device)
+        else:
+            return self.running_cost(state,u)
     
     def shift_nominal_trajectory(self): 
         '''
@@ -266,7 +269,7 @@ class CUSTOM_MPPI():
         # Combine to find one optimal trajectory based on total cost
         action = self.compute_optimal_control_sequence(cost_total, noise)
         self.U = self.U + action
-        control_input = self.U
+        control_input = self.U[0]
         # print(f"time per iteration: {time.time() - now}")
 
         # # Unroll once for the policy for visualization

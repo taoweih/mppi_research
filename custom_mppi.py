@@ -168,39 +168,39 @@ class CUSTOM_MPPI():
             state = next_state # shape (K x nx)
 
 
-            # if (stage_counter % self.N == 0 and stage_counter != 0): # TODO test edge cases for division
+            if (stage_counter % self.N == 0 and stage_counter != 0): # TODO test edge cases for division
 
-            #     start = time.time()
+                start = time.time()
 
-            #     kde = KernelDensity(bandwidth=0.3, kernel="gaussian")
-            #     kde.fit(state)
-
-
-            #     if state.shape[1] == 1:
-            #         score = kde.score_samples(state.unsqueeze(1), batch_size=4096) # kde score samples calculate log(p(x))
-            #     else:
-            #         score = kde.score_samples(state, batch_size=4096)
-            #     pass
-
-            #     p_x = torch.exp(score) # calculate pdf of x
-
-            #     inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
-            #     inv_px = inv_px / inv_px.sum()
+                kde = KernelDensity(bandwidth=0.3, kernel="gaussian")
+                kde.fit(state)
 
 
-            #     indices = torch.multinomial(inv_px, num_samples=self.K, replacement=True)
-            #     state_new = state[indices]
+                if state.shape[1] == 1:
+                    score = kde.score_samples(state.unsqueeze(1), batch_size=4096) # kde score samples calculate log(p(x))
+                else:
+                    score = kde.score_samples(state, batch_size=4096)
+                pass
 
-            #     perturbed_actions_new = perturbed_actions[indices]
-            #     perturbed_actions_new[:,t:] = self.U[t:] + self.noise_dist.sample((self.K, self.T -t))
+                p_x = torch.exp(score) # calculate pdf of x
 
-            #     rollout_cost_new = rollout_cost[indices]
+                inv_px = (1.0 / p_x+1e-5)**1.2 # calculate inverse of the pdf
+                inv_px = inv_px / inv_px.sum()
+
+
+                indices = torch.multinomial(inv_px, num_samples=self.K, replacement=True)
+                state_new = state[indices]
+
+                perturbed_actions_new = perturbed_actions[indices]
+                perturbed_actions_new[:,t:] = self.U[t:] + self.noise_dist.sample((self.K, self.T -t))
+
+                rollout_cost_new = rollout_cost[indices]
 
                 
 
-            #     state = state_new
-            #     perturbed_actions = perturbed_actions_new
-            #     rollout_cost = rollout_cost_new
+                state = state_new
+                perturbed_actions = perturbed_actions_new
+                rollout_cost = rollout_cost_new
 
             k_states.append(state)
                 
@@ -299,6 +299,6 @@ def run_mppi(mppi, env, iter=100, render = True):
         action, states, policy = mppi.command(state) # get the control input from mppi based on current state
         _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)
         if render:
-            env.set_render_info(states.cpu().numpy(), policy.cpu().numpy())
+            env.unwrapped.set_render_info(states.cpu().numpy(), policy.cpu().numpy())
             env.render()
     return

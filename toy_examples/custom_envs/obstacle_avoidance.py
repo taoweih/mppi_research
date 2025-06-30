@@ -83,8 +83,8 @@ class ObstacleAvoidanceEnv(gym.Env):
 
         self.state = np.array([new_x, new_y, speed_x,speed_y])
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
 
         costs = 0
 
@@ -97,8 +97,8 @@ class ObstacleAvoidanceEnv(gym.Env):
         elif self.env == "U":
             self.state = np.array([330.0, 200.0, 0, 0]) #start position
 
-        if self.render_mode == "human":
-            self.render()
+        # if self.render_mode == "human":
+        #     self.render()
         return self._get_obs(), {}
 
 

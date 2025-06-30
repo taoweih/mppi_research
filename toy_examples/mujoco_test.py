@@ -20,7 +20,7 @@ MODEL = mujoco.MjModel.from_xml_path("mujoco_menagerie/unitree_go2/scene_mjx.xml
 
 model = MODEL
 data = mujoco.MjData(model)
-# model.opt.timestep = 0.01
+model.opt.timestep = 0.01
 mjx_model = mjx.put_model(model)
 
 body_name = "go2"

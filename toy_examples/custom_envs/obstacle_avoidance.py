@@ -111,7 +111,7 @@ class ObstacleAvoidanceEnv(gym.Env):
         self.render_policy = policy[:,0:2].astype("int")
 
     def render(self):
-        freq = 1000
+        freq = 100
         counter = 0
 
         states= self.render_states

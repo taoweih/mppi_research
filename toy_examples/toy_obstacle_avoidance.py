@@ -13,12 +13,12 @@ import base_mppi
 if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
-    TIMESTEPS = 80  # T
-    N_SAMPLES = 500  # K
+    TIMESTEPS = 30  # T
+    N_SAMPLES = 3000  # K
     ACTION_LOW = -3.0
     ACTION_HIGH = 3.0
     ENV = "U"
-    # ENV = "default"
+    ENV = "default"
 
     d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if d == torch.device("cpu"):

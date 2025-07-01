@@ -17,6 +17,7 @@ if __name__ == "__main__":
     ENV_NAME = "ObstacleAvoidance-v0"
 
     TIMESTEPS = 60  # T
+    N_Chunks = 5
     N_SAMPLES = 3000  # K
     ACTION_LOW = -3.0
     ACTION_HIGH = 3.0
@@ -137,36 +138,37 @@ if __name__ == "__main__":
     #                      lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
     #                      u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
     # total_reward = base_mppi.run_mppi(mppi_gym, env, iter=100)
-    
-    # s = 0
-    # for _ in tqdm(range(100)):
+
+    s = np.zeros(10)
+    for j in tqdm(range(10,101,10)):
+        TIMESTEPS = j
+        for _ in tqdm(range(100)):
+            env.reset()
+            env.state = env.unwrapped.state = start_position
+
+            mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage = int(TIMESTEPS/N_Chunks),
+                                lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
+                                u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+
+            for i in range(200):
+                state = env.unwrapped.state.copy() # current state of the robot
+                e = np.sum(np.sqrt((np.array(state[0:2]) - goal.cpu().numpy())**2))
+                if e < 100:
+                    s[int(j/10)-1] +=1
+                    break
+
+                action, states, policy = mppi_gym.command(state) # get the control input from mppi based on current state
+
+                _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)
+                # env.unwrapped.set_render_info(states.cpu().numpy(), policy.cpu().numpy())
+                # env.render()
+
+            env.close()
+    print(s)
+    plt.figure()
+    plt.plot(range(10,101,10),s)
+    plt.xlabel("Horizon (TIMESTEPS)")
+    plt.ylabel("Success rate %")
+    plt.show()
 
 
-    env.reset()
-    env.state = env.unwrapped.state = start_position
-
-    mppi_gym = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=10,
-                        lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                        u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
-
-    # error = []
-
-    for i in tqdm(range(200)):
-        state = env.unwrapped.state.copy() # current state of the robot
-        e = np.sum(np.sqrt((np.array(state[0:2]) - goal.cpu().numpy())**2))
-        # if e < 100:
-        #     s +=1
-        #     break
-        # error.append(e)
-        action, states, policy = mppi_gym.command(state) # get the control input from mppi based on current state
-        _ = env.step(action.cpu().numpy()) # execute the control input (env return info for RL, can be discarded)
-        env.unwrapped.set_render_info(states.cpu().numpy(), policy.cpu().numpy())
-        env.render()
-
-    env.close()
-    
-    # print(s)
-
-    # plt.figure()
-    # plt.plot(error)
-    # plt.show()

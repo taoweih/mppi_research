@@ -18,6 +18,7 @@ class MPPIStagedRolloutConfig(OptimizerConfig):
     sigma: float = 0.1
     temperature: float = 0.05
     chunk_steps: int = 10
+    kde_bandwidth:float = 0.5
 
 
 class MPPIStagedRollout(Optimizer[MPPIStagedRolloutConfig]):
@@ -41,6 +42,11 @@ class MPPIStagedRollout(Optimizer[MPPIStagedRolloutConfig]):
     def chunk_steps(self) -> int:
         """Get the chunk_steps value."""
         return self.config.chunk_steps
+    
+    @property
+    def kde_bandwidth(self) -> int:
+        """Get the kde_bandwidth value."""
+        return self.config.kde_bandwidth
 
     def sample_control_knots(self, nominal_knots: np.ndarray) -> np.ndarray:
         """Samples control knots given a nominal control input.

@@ -21,7 +21,9 @@ from judo.utils.normalization import (
 )
 from judo.visualizers.utils import get_trace_sensors
 
+# Just for MPPI with staged rollout 
 from judo.optimizers.mppi_staged_rollout import MPPIStagedRollout
+from sklearn.neighbors import KernelDensity
 
 @slider("horizon", 0.1, 10.0)
 @slider("control_freq", 0.25, 50.0)
@@ -190,26 +192,51 @@ class Controller:
             if isinstance(self.optimizer, MPPIStagedRollout):
                 #TODO add staged rollout
                 K, T, nu = self.rollout_controls.shape
+                N = self.optimizer.chunk_steps
+                stage_counter = 0
+
                 all_states = []
                 all_sensors = []
+
+                all_states = np.zeros((K,T,curr_state.shape[-1]))
+                all_sensors = np.zeros((K,T,self.model.nsensordata))
 
                 curr_state = np.repeat(curr_state[None,:],K,axis=0) # K by nx
 
                 for t in range (T):
-                    u = self.rollout_controls[:,t][:,None,:]
+                    u = self.rollout_controls[:,t][:,None,:] # K by 1 by nu, added 1 to T dimension because rollout expects it
                     next_state, next_sensor = self.rollout_backend.rollout(self.model_data_pairs, curr_state, u, is_full_state=True)
                     next_state = next_state.squeeze(1)
                     next_sensor = next_sensor.squeeze(1)
 
-                    all_states.append(next_state)
-                    all_sensors.append(next_sensor)
+                    if (stage_counter % N == 0 and stage_counter != 0):
+                        kde = KernelDensity(bandwidth=self.optimizer.kde_bandwidth, kernel="gaussian")
+                        kde.fit(next_state)
+
+                        score = kde.score_samples(next_state)
+                        p_x = np.exp(score)
+                        inv_px = (1.0 / p_x+1e-5)**1.2
+                        inv_px = inv_px / inv_px.sum() # K
+
+                        indices = np.random.choice(len(inv_px), size=K, p = inv_px, replace=True)
+                        next_state = next_state[indices]
+                        all_states[:,:t,:] = all_states[indices,:t,:]
+                        all_sensors[:,:t,:] = all_sensors[indices,:t,:]
+                        self.rollout_controls[:,:t,:] = self.rollout_controls[indices,:t,:]
+                        #TODO fix this need to sample knot first and then make spline
+                        # self.rollout_controls[:,t:,:] = self.rollout_controls[0,t:,:][None,:,:] + self.optimizer.sigma * np.random.randn(K, T-t, nu)
+
+                        
+
+                    all_states[:,t,:]=next_state
+                    all_sensors[:,t,:]=next_sensor
+
+                    stage_counter+=1
 
                     curr_state = next_state
 
-                self.states = np.stack(all_states,axis=1)
-                self.sensors = np.stack(all_sensors,axis=1)
-
-
+                self.states = all_states # K by T by nx
+                self.sensors = all_sensors
             else:
                 self.states, self.sensors = self.rollout_backend.rollout(
                     self.model_data_pairs,

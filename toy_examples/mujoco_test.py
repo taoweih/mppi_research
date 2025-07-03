@@ -28,8 +28,8 @@ id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
 
 goal = [-0.1934, -0.142, 0.232]
 
-TIMESTEPS = 20  # T
-N_SAMPLES = 4000  # K
+TIMESTEPS = 10  # T
+N_SAMPLES = 1000  # K
 ACTION_LOW = -20.0
 ACTION_HIGH = 20.0
 
@@ -46,7 +46,7 @@ dtype = torch.float32
 # noise_sigma = torch.tensor(10, device=d, dtype=dtype)
 # noise_sigma = torch.tensor([[2, 0], [0, 2]], device=d, dtype=dtype)
 
-noise_sigma = 10*torch.eye(model.nu, device=d, dtype=dtype)
+noise_sigma = 25*torch.eye(model.nu, device=d, dtype=dtype)
 lambda_ = 1.
 
 @jax.jit
@@ -69,33 +69,48 @@ def dynamics(state, perturbed_action):
 @jax.vmap
 def running_cost(state, action):
     cost = 0
-    # goal = jnp.array([[ 0,      0,      0    ],
-    #                     [ 0.     , 0.     , 0.445 ],
-    #                     [ 0.1934 , 0.0465  ,0.445 ],
-    #                     [ 0.1934 , 0.142   ,0.445 ],
-    #                     [ 0.1934 , 0.142   ,0.232 ],
-    #                     [ 0.1934 ,-0.0465  ,0.445 ],
-    #                     [ 0.1934 ,-0.142   ,0.445 ],
-    #                     [ 0.1934 ,-0.142   ,0.232 ],
-    #                     [-0.1934 , 0.0465  ,0.445 ],
-    #                     [-0.1934 , 0.142   ,0.445 ],
-    #                     [-0.1934 , 0.142   ,0.232 ],
-    #                     [-0.1934 ,-0.0465  ,0.445 ],
-    #                     [-0.1934 ,-0.142   ,0.445 ],
-    #                     [-0.1934 ,-0.142   ,0.232 ]])
+    goal_pos = jnp.array([[ 0,      0,      0    ],
+                        [ 0.     , 0.     , 0.445 ],
+                        [ 0.1934 , 0.0465  ,0.445 ],
+                        [ 0.1934 , 0.142   ,0.445 ],
+                        [ 0.1934 , 0.142   ,0.232 ],
+                        [ 0.1934 ,-0.0465  ,0.445 ],
+                        [ 0.1934 ,-0.142   ,0.445 ],
+                        [ 0.1934 ,-0.142   ,0.232 ],
+                        [-0.1934 , 0.0465  ,0.445 ],
+                        [-0.1934 , 0.142   ,0.445 ],
+                        [-0.1934 , 0.142   ,0.232 ],
+                        [-0.1934 ,-0.0465  ,0.445 ],
+                        [-0.1934 ,-0.142   ,0.445 ],
+                        [-0.1934 ,-0.142   ,0.232 ]])
+    goal_quat = jnp.array( [[1.0, 0.0, 0, 0,],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.],
+                [1, 0, 0, 0.]])
 
 
-    # mjx_model = mjx.put_model(model)
-    # mjx_data = mjx.make_data(mjx_model)
+    mjx_model = mjx.put_model(model)
+    mjx_data = mjx.make_data(mjx_model)
 
-    # qpos = state[:model.nq]
-    # qvel = state[model.nq:]
+    qpos = state[:model.nq]
+    qvel = state[model.nq:]
 
-    # mjx_data= mjx_data.replace(qpos=qpos, qvel=qvel,ctrl=action)
-    # next_data = mjx.forward(mjx_model, mjx_data)
-    # curr_xpos = next_data.xpos
+    mjx_data= mjx_data.replace(qpos=qpos, qvel=qvel,ctrl=action)
+    next_data = mjx.forward(mjx_model, mjx_data)
+    curr_xpos = next_data.xpos
+    curr_xquat = next_data.xquat
 
-    # cost = cost + jnp.sum((curr_xpos - goal)**2)
+    cost = cost + jnp.sum((curr_xpos - goal_pos)**2) + jnp.sum((curr_xquat - goal_quat)**2)
 
     return cost
 
@@ -111,7 +126,8 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():
         # # vectorize robot states
         state = np.concatenate([data.qpos, data.qvel])
-        # print(jnp.array(data.xpos))
+        # print(f'xpos:{jnp.array(data.xpos)}')
+        # print(f'xquad:{jnp.array(data.xquat)}')
         state = torch.tensor(state, dtype = dtype, device = d)
         # now = time.time()
         action, _, _ = mppi.command(state)

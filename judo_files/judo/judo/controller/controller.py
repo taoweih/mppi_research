@@ -21,6 +21,7 @@ from judo.utils.normalization import (
 )
 from judo.visualizers.utils import get_trace_sensors
 
+from judo.optimizers.mppi_staged_rollout import MPPIStagedRollout
 
 @slider("horizon", 0.1, 10.0)
 @slider("control_freq", 0.25, 50.0)
@@ -185,13 +186,30 @@ class Controller:
             # Roll out dynamics with action sequences.
             self.task.pre_rollout(curr_state, self.task_cfg)
 
-            if self.optimizer is "mppi_staged_rollout":
-                #TODO custom rollout function
-                self.states, self.sensors = self.rollout_backend.rollout(
-                    self.model_data_pairs,
-                    curr_state,
-                    self.rollout_controls,
-                )
+
+            if isinstance(self.optimizer, MPPIStagedRollout):
+                #TODO add staged rollout
+                K, T, nu = self.rollout_controls.shape
+                all_states = []
+                all_sensors = []
+
+                curr_state = np.repeat(curr_state[None,:],K,axis=0) # K by nx
+
+                for t in range (T):
+                    u = self.rollout_controls[:,t][:,None,:]
+                    next_state, next_sensor = self.rollout_backend.rollout(self.model_data_pairs, curr_state, u, is_full_state=True)
+                    next_state = next_state.squeeze(1)
+                    next_sensor = next_sensor.squeeze(1)
+
+                    all_states.append(next_state)
+                    all_sensors.append(next_sensor)
+
+                    curr_state = next_state
+
+                self.states = np.stack(all_states,axis=1)
+                self.sensors = np.stack(all_sensors,axis=1)
+
+
             else:
                 self.states, self.sensors = self.rollout_backend.rollout(
                     self.model_data_pairs,

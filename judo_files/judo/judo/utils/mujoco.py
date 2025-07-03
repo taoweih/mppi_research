@@ -41,6 +41,7 @@ class RolloutBackend:
         model_data_pairs: list[tuple[MjModel, MjData]],
         x0: np.ndarray,
         controls: np.ndarray,
+        is_full_state: bool = False,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Conduct a rollout depending on the backend."""
         # unpack models into a list of models and data
@@ -55,8 +56,11 @@ class RolloutBackend:
 
         # the state passed into mujoco's rollout function includes the time
         # shape = (num_rollouts, num_states + 1)
-        x0_batched = np.tile(x0, (len(ms), 1))
-        full_states = np.concatenate([time.time() * np.ones((len(ms), 1)), x0_batched], axis=-1)
+        if not is_full_state:
+            x0_batched = np.tile(x0, (len(ms), 1))
+            full_states = np.concatenate([time.time() * np.ones((len(ms), 1)), x0_batched], axis=-1)
+        else:
+            full_states = np.concatenate([time.time() * np.ones((len(ms), 1)), x0], axis=-1)
         assert full_states.shape[-1] == nq + nv + 1
         assert full_states.ndim == 2
         assert controls.ndim == 3

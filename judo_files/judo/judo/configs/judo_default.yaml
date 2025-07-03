@@ -1,5 +1,5 @@
 task: cylinder_push
-optimizer: cem
+optimizer: mppi_staged_rollout
 
 dataflow:
   nodes:

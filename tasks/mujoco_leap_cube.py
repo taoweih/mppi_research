@@ -6,61 +6,21 @@ import numpy as np
 import torch
 import warnings
 
+from pathlib import Path
 import sys
 sys.path.append("..")
 import custom_mppi
 import base_mppi
 import time
 
+from judo.utils.math_utils import quat_diff_so3
+
 # from judo mpc cylinder push task
-model_xml = r"""<mujoco model="cylinder_push">
-  <option timestep="0.02" />
-
-  <asset>
-    <texture name="blue_grid" type="2d" builtin="checker" rgb1=".02 .14 .44" rgb2=".27 .55 1" width="300" height="300" mark="edge" markrgb="1 1 1"/>
-    <material name="blue_grid" texture="blue_grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
-  </asset>
-
-  <default>
-    <default class="slider">
-      <position kp="10" ctrlrange="-10 10" forcerange="-1000 1000"/>
-    </default>
-  </default>
-
-  <worldbody>
-    <body>
-      <geom mass="0" name="floor" pos="0 0 -0.25" condim="3" size="10.0 10.0 0.10" rgba="0 1 1 1" type="box" material="blue_grid"/>
-    </body>
-
-    <body name="pusher" pos="0 0 0">
-      <joint name="slider_x" damping="4" type="slide" axis="1 0 0" />
-      <joint name="slider_y" damping="4" type="slide" axis="0 1 0" />
-      <geom name="pusher" type="cylinder" size="0.25 0.1" mass="1" rgba=".9 .5 .5 1" friction="0"/>
-      <site pos="0 0 0.15" name="pusher_site"/>
-    </body>
-
-    <body name="cart" pos="0 0 0">
-      <joint name="slider_cart_x" damping="4" type="slide" axis="1 0 0" />
-      <joint name="slider_cart_y" damping="4" type="slide" axis="0 1 0" />
-      <geom name="cart" type="cylinder" size="0.25 0.1" mass="1" rgba=".1 .5 .5 1" friction="0"/>
-      <site pos="0 0 0.15" name="cart_site"/>
-    </body>
-  </worldbody>
-
-  <actuator>
-    <position name="actuator_pusher_x" joint="slider_x" class="slider" />
-    <position name="actuator_pusher_y" joint="slider_y" class="slider" />
-  </actuator>
-
-  <sensor>
-    <framepos name="trace_pusher" objtype="site" objname="pusher_site"/>
-    <framepos name="trace_cart" objtype="site" objname="cart_site"/>
-  </sensor>
-
-</mujoco>"""
+ROOT = Path(__file__).resolve().parent
+model_xml_path = str(ROOT/"models/judo_mpc_models/xml/leap_cube.xml")
 
 NUM_THREAD = 16
-MODEL = mujoco.MjModel.from_xml_string(model_xml)
+MODEL = mujoco.MjModel.from_xml_path(model_xml_path)
 
 model = MODEL
 data = mujoco.MjData(model)
@@ -68,8 +28,8 @@ model.opt.timestep = 0.01
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 
-TIMESTEPS = 30  # T
-N_SAMPLES = 1000  # K
+TIMESTEPS = 100  # T
+N_SAMPLES = 200  # K
 ACTION_LOW = -10.0
 ACTION_HIGH = 10.0
 
@@ -92,42 +52,24 @@ def dynamics(state, perturbed_action):
     state, _ = mujoco.rollout.rollout(model=model, data=data_list, initial_state = state.cpu().numpy(), nstep = 1, control=control, persistent_pool=True)
     return torch.tensor(state).squeeze(1) # remove the nsteps dimension since it's only simulated for 1 time step
 
-goal_pos = [2.0,2.0]
-pusher_goal_offset = 0.25
-w_pusher_proximity = 0.5
-w_pusher_velocity = 0.0
-w_cart_position = 0.1
+goal_pos = np.array([0.0,0.03,0.1])
+goal_quat = np.array([1.0,0.0,0.0,0.0]) #default goal_quat
+w_pos = 100.0
+w_rot = 0.1
 
 def running_cost(state,action):
     cost = 0
-    batch_size = state.shape[0]
 
-    pusher_pos = state[..., 1:3].cpu().numpy()
-    cart_pos = state[..., 3:5].cpu().numpy()
-    pusher_vel = state[..., 5:7].cpu().numpy()
-    cart_goal = np.array(goal_pos)
+    qo_pos_traj = state[..., :3]
+    qo_quat_traj = state[..., 3:7]
+    qo_pos_diff = qo_pos_traj - goal_pos
+    qo_quat_diff = quat_diff_so3(qo_quat_traj, goal_quat)
 
-    cart_to_goal = cart_goal - cart_pos
-    cart_to_goal_norm = np.linalg.norm(cart_to_goal, axis=-1, keepdims=True)
-    cart_to_goal_direction = cart_to_goal / cart_to_goal_norm
+    pos_cost = w_pos * 0.5 * np.square(qo_pos_diff).sum(-1).mean(-1)
+    rot_cost = w_rot * 0.5 * np.square(qo_quat_diff).sum(-1).mean(-1)
+    cost += pos_cost + rot_cost
 
-    pusher_goal = cart_pos - pusher_goal_offset * cart_to_goal_direction
-
-    pusher_proximity = 0.5*np.square(pusher_pos - pusher_goal)
-    pusher_reward = -w_pusher_proximity * pusher_proximity.sum(-1)
-
-    velocity_reward = -w_pusher_velocity * 0.5*np.square(pusher_vel).sum(-1)
-
-    goal_proximity = 0.5*np.square(cart_pos - cart_goal)
-    goal_reward = -w_cart_position * goal_proximity.sum(-1)
-
-    assert pusher_reward.shape == (batch_size,)
-    assert velocity_reward.shape == (batch_size,)
-    assert goal_reward.shape == (batch_size,)
-
-    cost += -(pusher_reward+velocity_reward + goal_reward)
-
-    return torch.tensor(10000*cost, dtype=dtype, device=d)
+    return torch.tensor(cost, dtype=dtype, device=d)
 
 def terminal_cost(state):
     cost = 0
@@ -137,26 +79,43 @@ mppi = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, use_mujo
                          lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
                          u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
 # initilization
-theta = 2*np.pi*np.random.rand(2)
-data.qpos = np.array([np.cos(theta[0]),
-                     np.sin(theta[0]),
-                    2*np.cos(theta[1]),
-                    2*np.sin(theta[1])])
-data.qvel=np.zeros(4)
+qpos_home = np.array(
+    [
+        0.0, 0.03, 0.1, 1.0, 0.0, 0.0, 0.0,  # cube
+        0.5, -0.75, 0.75, 0.25,  # index
+        0.5, 0.0, 0.75, 0.25,  # middle
+        0.5, 0.75, 0.75, 0.25,  # ring
+        0.65, 0.9, 0.75, 0.6,  # thumb
+    ]
+) 
+reset_command = np.array(
+            [
+                0.5, -0.75, 0.75, 0.25,  # index
+                0.5, 0.0, 0.75, 0.25,  # middle
+                0.5, 0.75, 0.75, 0.25,  # ring
+                0.65, 0.9, 0.75, 0.6,  # thumb
+            ]
+        ) 
+
+data.qpos[:] = qpos_home
+data.qvel[:] = 0.0
+data.ctrl[:] = reset_command
+uvw = np.random.rand(3)
+goal_quat = np.array(
+            [
+                np.sqrt(1 - uvw[0]) * np.sin(2 * np.pi * uvw[1]),
+                np.sqrt(1 - uvw[0]) * np.cos(2 * np.pi * uvw[1]),
+                np.sqrt(uvw[0]) * np.sin(2 * np.pi * uvw[2]),
+                np.sqrt(uvw[0]) * np.cos(2 * np.pi * uvw[2]),
+            ]
+        )
+data.mocap_quat[0] = goal_quat
+
 mujoco.mj_forward(model,data)
 
 
 with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():
-        
-        viewer.user_scn.ngeom = 1
-        mujoco.mjv_initGeom(viewer.user_scn.geoms[0],
-                            type=mujoco.mjtGeom.mjGEOM_SPHERE,
-                            size = [0.1,0,0],
-                            pos = [goal_pos[0],goal_pos[1],-0.1],
-                            mat=np.eye(3).flatten(),
-                            rgba = [1,0,0,1])
-
         # # vectorize robot states
         state = np.concatenate([[data.time],data.qpos, data.qvel])
         state = torch.tensor(state, dtype = dtype, device = d)

@@ -1,0 +1,25 @@
+<mujoco model="leap_rh">
+  <include file="leap_components/assets.xml" />
+  <include file="leap_components/params_and_default.xml" />
+
+  <asset>
+    <texture name="blue_grid" type="2d" builtin="checker" rgb1=".02 .14 .44" rgb2=".27 .55 1" width="300" height="300" mark="edge" markrgb="1 1 1"/>
+    <material name="blue_grid" texture="blue_grid" texrepeat="1 1" texuniform="true" reflectance=".5"/>
+  </asset>
+
+  <worldbody>
+    <body>
+      <geom mass="0" name="floor" pos="0 0 -0.25" condim="3" size="10.0 10.0 0.10" rgba="0 1 1 1" type="box" material="blue_grid"/>
+    </body>
+    <body name="goal" pos="-0.1 -0.1 0.3" quat="1 0 0 0" mocap="true">
+      <include file="leap_components/cube_pips_vis.xml" />
+    </body>
+    <body name="cube" pos="0.0 0.0 0.2" quat="1 0 0 0">
+      <freejoint/>
+      <include file="leap_components/cube_pips_coll.xml" />
+    </body>
+    <body name="leap_hand" pos="0.0 0.0 0.0" quat="0 0.9961947 0 -0.0871557">
+      <include file="leap_components/leap_hand.xml" />
+    </body>
+  </worldbody>
+</mujoco>

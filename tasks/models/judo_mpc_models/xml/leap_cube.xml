@@ -6,6 +6,7 @@
     <texture name="blue_grid" type="2d" builtin="checker" rgb1=".02 .14 .44" rgb2=".27 .55 1" width="300" height="300" mark="edge" markrgb="1 1 1"/>
     <material name="blue_grid" texture="blue_grid" texrepeat="1 1" texuniform="true" reflectance=".5"/>
   </asset>
+  <!-- <default><geom rgba = "1 0 0 0.5"/></default> -->
 
   <worldbody>
     <body>

@@ -28,10 +28,11 @@ model.opt.timestep = 0.01
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 
-TIMESTEPS = 100  # T
-N_SAMPLES = 200  # K
-ACTION_LOW = -10.0
-ACTION_HIGH = 10.0
+TIMESTEPS = 10  # T
+N_SAMPLES = 100  # K
+ACTION_LOW = model.actuator_ctrlrange[:,0]
+ACTION_HIGH = model.actuator_ctrlrange[:,1]
+print(model.actuator_ctrlrange)
 
 nx = model.nq + model.nv # +1 since time is considered a state my mujoco
 
@@ -43,8 +44,8 @@ if d == torch.device("cpu"):
     warnings.warn("No GPU device detected, using cpu instead", UserWarning)
 dtype = torch.float32
 
-noise_sigma = 0.1*torch.eye(model.nu, device=d, dtype=dtype)
-lambda_ = 1.
+noise_sigma = 0.5*torch.eye(model.nu, device=d, dtype=dtype)
+lambda_ = 0.5
 
 def dynamics(state, perturbed_action):
     #load state into a MjData instance of the model
@@ -54,14 +55,14 @@ def dynamics(state, perturbed_action):
 
 goal_pos = np.array([0.0,0.03,0.1])
 goal_quat = np.array([1.0,0.0,0.0,0.0]) #default goal_quat
-w_pos = 100.0
+w_pos = 100
 w_rot = 0.1
 
 def running_cost(state,action):
     cost = 0
 
-    qo_pos_traj = state[..., :3]
-    qo_quat_traj = state[..., 3:7]
+    qo_pos_traj = state[..., 1:4]
+    qo_quat_traj = state[..., 4:8]
     qo_pos_diff = qo_pos_traj - goal_pos
     qo_quat_diff = quat_diff_so3(qo_quat_traj, goal_quat)
 
@@ -76,8 +77,13 @@ def terminal_cost(state):
     return cost
 
 mppi = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, use_mujoco_physics=False, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=20,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d, dtype=dtype),
+                         u_max=torch.tensor(ACTION_HIGH, device=d,dtype=dtype), device=d, U_init=torch.tensor(            [
+                0.5, -0.75, 0.75, 0.25,  # index
+                0.5, 0.0, 0.75, 0.25,  # middle
+                0.5, 0.75, 0.75, 0.25,  # ring
+                0.65, 0.9, 0.75, 0.6,  # thumb
+            ], dtype=dtype,device=d).unsqueeze(0).repeat(TIMESTEPS,1))
 # initilization
 qpos_home = np.array(
     [

@@ -207,7 +207,7 @@ Naming Conventions
 
             <geom name="rf_tip" class="tip"/>
 
-            <site name="trace_rf_tip" pos="0 -0.045 0.0144" size="0.1"/>
+            <site name="trace_rf_tip" pos="0 -0.045 0.0144" size="0.01"/>
           </body>
 
         </body>

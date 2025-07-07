@@ -41,7 +41,7 @@ if d == torch.device("cpu"):
     warnings.warn("No GPU device detected, using cpu instead", UserWarning)
 dtype = torch.float32
 
-noise_sigma = 0.1*torch.eye(model.nu, device=d, dtype=dtype)
+noise_sigma = 2*torch.eye(model.nu, device=d, dtype=dtype)
 lambda_ = 1.
 
 def dynamics(state, perturbed_action):
@@ -85,7 +85,7 @@ def running_cost(state,action):
 
     cost += -(pusher_reward+velocity_reward + goal_reward)
 
-    return torch.tensor(10000*cost, dtype=dtype, device=d)
+    return torch.tensor(1*cost, dtype=dtype, device=d)
 
 def terminal_cost(state):
     cost = 0

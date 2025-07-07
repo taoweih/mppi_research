@@ -91,7 +91,7 @@ dtype = torch.float32
 
 # noise_sigma = torch.tensor(10, device=d, dtype=dtype)
 # noise_sigma = torch.tensor([[2, 0], [0, 2]], device=d, dtype=dtype)
-noise_sigma = 0.1*torch.eye(model.nu, device=d, dtype=dtype)
+noise_sigma = 5*torch.eye(model.nu, device=d, dtype=dtype)
 lambda_ = 1.
 
 # for compatible mjx model

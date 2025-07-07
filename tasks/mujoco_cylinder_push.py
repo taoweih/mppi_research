@@ -68,7 +68,7 @@ model.opt.timestep = 0.01
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 
-TIMESTEPS = 100  # T
+TIMESTEPS = 30  # T
 N_SAMPLES = 1000  # K
 ACTION_LOW = -10.0
 ACTION_HIGH = 10.0

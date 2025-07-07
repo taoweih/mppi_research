@@ -2,10 +2,6 @@ import mujoco
 import mujoco.rollout
 import mujoco.viewer
 
-import jax
-import jax.numpy as jnp
-from mujoco import mjx
-
 import numpy as np
 import torch
 import warnings
@@ -15,6 +11,8 @@ sys.path.append("..")
 import custom_mppi
 import base_mppi
 import time
+
+# from judo mpc cylinder push task
 model_xml = r"""<mujoco model="cylinder_push">
   <option timestep="0.02" />
 
@@ -61,9 +59,6 @@ model_xml = r"""<mujoco model="cylinder_push">
 
 </mujoco>"""
 
-
-# MODEL = mujoco.MjModel.from_xml_path("mujoco_menagerie/unitree_go2/scene_mjx.xml")
-
 NUM_THREAD = 16
 MODEL = mujoco.MjModel.from_xml_string(model_xml)
 
@@ -72,7 +67,6 @@ data = mujoco.MjData(model)
 model.opt.timestep = 0.01
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
-# mjx_model = mjx.put_model(model)
 
 TIMESTEPS = 100  # T
 N_SAMPLES = 1000  # K
@@ -89,27 +83,8 @@ if d == torch.device("cpu"):
     warnings.warn("No GPU device detected, using cpu instead", UserWarning)
 dtype = torch.float32
 
-# noise_sigma = torch.tensor(10, device=d, dtype=dtype)
-# noise_sigma = torch.tensor([[2, 0], [0, 2]], device=d, dtype=dtype)
 noise_sigma = 0.1*torch.eye(model.nu, device=d, dtype=dtype)
 lambda_ = 1.
-
-# for compatible mjx model
-# @jax.jit
-# @jax.vmap
-# def dynamics(state, perturbed_action):
-#     # mjx_model = mjx.put_model(model)
-#     mjx_data = mjx.make_data(mjx_model)
-
-#     qpos = state[:model.nq]
-#     qvel = state[model.nq:]
-
-#     mjx_data= mjx_data.replace(qpos=qpos, qvel=qvel,ctrl=perturbed_action)
-#     mjx_data_next = mjx.step(mjx_model,mjx_data)
-
-#     state = jnp.concatenate([mjx_data_next.qpos, mjx_data_next.qvel])
-
-#     return state
 
 def dynamics(state, perturbed_action):
     #load state into a MjData instance of the model
@@ -154,42 +129,6 @@ def running_cost(state,action):
 
     return torch.tensor(10000*cost, dtype=dtype, device=d)
 
-
-# # for mjx compatible models
-# @jax.jit
-# @jax.vmap
-# def running_cost(state, action):
-#     cost = 0
-#     # goal_pos = jnp.array([[ 0,      0,      0    ],
-#     #                     [ 0.     , 0.     , 0.445 ],
-#     #                     [ 0.1934 , 0.0465  ,0.445 ],
-#     #                     [ 0.1934 , 0.142   ,0.445 ],
-#     #                     [ 0.1934 , 0.142   ,0.232 ],
-#     #                     [ 0.1934 ,-0.0465  ,0.445 ],
-#     #                     [ 0.1934 ,-0.142   ,0.445 ],
-#     #                     [ 0.1934 ,-0.142   ,0.232 ],
-#     #                     [-0.1934 , 0.0465  ,0.445 ],
-#     #                     [-0.1934 , 0.142   ,0.445 ],
-#     #                     [-0.1934 , 0.142   ,0.232 ],
-#     #                     [-0.1934 ,-0.0465  ,0.445 ],
-#     #                     [-0.1934 ,-0.142   ,0.445 ],
-#     #                     [-0.1934 ,-0.142   ,0.232 ]])
-
-#     # mjx_model = mjx.put_model(model)
-#     # mjx_data = mjx.make_data(mjx_model)
-
-#     # qpos = state[:model.nq]
-#     # qvel = state[model.nq:]
-
-#     # mjx_data= mjx_data.replace(qpos=qpos, qvel=qvel,ctrl=action)
-#     # next_data = mjx.forward(mjx_model, mjx_data)
-#     # curr_xpos = next_data.xpos
-#     # curr_xquat = next_data.xquat
-
-#     # cost = cost + jnp.sum((curr_xpos - goal_pos)**2) + jnp.sum((curr_xquat - goal_quat)**2)
-
-#     return cost
-
 def terminal_cost(state):
     cost = 0
     return cost
@@ -224,7 +163,6 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
 
         # now = time.time()
         action, _, _ = mppi.command(state)
-        # print(action)
         # print(f"time: {time.time() - now}")
  
         data.ctrl[:] = action.cpu().numpy()

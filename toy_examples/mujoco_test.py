@@ -41,7 +41,7 @@ model_xml = r"""<mujoco model="cylinder_push">
       <site pos="0 0 0.15" name="pusher_site"/>
     </body>
 
-    <body name="cart" pos="0 0 0">
+    <body name="cart" pos="1 1 0">
       <joint name="slider_cart_x" damping="4" type="slide" axis="1 0 0" />
       <joint name="slider_cart_y" damping="4" type="slide" axis="0 1 0" />
       <geom name="cart" type="cylinder" size="0.25 0.1" mass="1" rgba=".1 .5 .5 1" friction="0"/>
@@ -63,11 +63,15 @@ model_xml = r"""<mujoco model="cylinder_push">
 
 
 # MODEL = mujoco.MjModel.from_xml_path("mujoco_menagerie/unitree_go2/scene_mjx.xml")
+
+NUM_THREAD = 10
 MODEL = mujoco.MjModel.from_xml_string(model_xml)
 
 model = MODEL
 data = mujoco.MjData(model)
 model.opt.timestep = 0.01
+
+data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 # mjx_model = mjx.put_model(model)
 
 # body_name = "go2"
@@ -90,7 +94,6 @@ dtype = torch.float32
 
 # noise_sigma = torch.tensor(10, device=d, dtype=dtype)
 # noise_sigma = torch.tensor([[2, 0], [0, 2]], device=d, dtype=dtype)
-
 noise_sigma = 2*torch.eye(model.nu, device=d, dtype=dtype)
 lambda_ = 1.
 
@@ -186,11 +189,11 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         # now = time.time()
         # action, _, _ = mppi.command(state)
         # print(f"time: {time.time() - now}")
-        action = torch.zeros_like(torch.tensor(np.random.uniform(-5,5,size=model.nu)))
+        action = 5*torch.ones_like(torch.tensor(np.random.uniform(-5,5,size=model.nu)))
  
-        # for i in range(5):
+        # # for i in range(5):
         data.ctrl[:] = action.cpu().numpy()
-        print(action)
+        # print(action)
         mujoco.mj_step(model,data)
         viewer.sync()
 

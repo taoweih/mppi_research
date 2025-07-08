@@ -212,6 +212,8 @@ class Controller:
 
                     if (stage_counter % N == 0 and stage_counter != 0 and node_counter < self.optimizer_cfg.num_nodes-2):
                         node_counter+=1
+
+                        # estimate density and resample indices
                         kde = KernelDensity(bandwidth=self.optimizer.kde_bandwidth, kernel="gaussian")
                         kde.fit(next_state)
 
@@ -221,10 +223,14 @@ class Controller:
                         inv_px = inv_px / inv_px.sum() # K
 
                         indices = np.random.choice(len(inv_px), size=K, p = inv_px, replace=True)
+
+                        # reorder past states and controls based on indices
                         next_state = next_state[indices]
                         all_states[:,:t,:] = all_states[indices,:t,:]
                         all_sensors[:,:t,:] = all_sensors[indices,:t,:]
                         self.rollout_controls[:,:t,:] = self.rollout_controls[indices,:t,:]
+                        self.candidate_knots[:,:node_counter,:] = self.candidate_knots[indices,:node_counter,:] 
+                        candidate_knots_normalized[:,:node_counter,:] = candidate_knots_normalized[indices,:node_counter,:]
 
 
                         ### resample new controls

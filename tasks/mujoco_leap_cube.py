@@ -19,7 +19,7 @@ from judo.utils.math_utils import quat_diff_so3
 ROOT = Path(__file__).resolve().parent
 model_xml_path = str(ROOT/"models/judo_mpc_models/xml/leap_cube.xml")
 
-NUM_THREAD = 16
+NUM_THREAD = 30
 MODEL = mujoco.MjModel.from_xml_path(model_xml_path)
 
 model = MODEL
@@ -28,11 +28,10 @@ model.opt.timestep = 0.01
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 
-TIMESTEPS = 10  # T
-N_SAMPLES = 100  # K
-ACTION_LOW = model.actuator_ctrlrange[:,0]
-ACTION_HIGH = model.actuator_ctrlrange[:,1]
-print(model.actuator_ctrlrange)
+TIMESTEPS = 30  # T
+N_SAMPLES = 200  # K
+ACTION_LOW = torch.tensor(model.actuator_ctrlrange[:,0])
+ACTION_HIGH = torch.tensor(model.actuator_ctrlrange[:,1])
 
 nx = model.nq + model.nv # +1 since time is considered a state my mujoco
 
@@ -44,13 +43,13 @@ if d == torch.device("cpu"):
     warnings.warn("No GPU device detected, using cpu instead", UserWarning)
 dtype = torch.float32
 
-noise_sigma = 0.5*torch.eye(model.nu, device=d, dtype=dtype)
+noise_sigma = (torch.max(ACTION_HIGH.abs(),ACTION_LOW.abs())*torch.eye(model.nu, dtype=dtype)).to(d)
 lambda_ = 0.5
 
 def dynamics(state, perturbed_action):
     #load state into a MjData instance of the model
     control = perturbed_action.unsqueeze(1).cpu().numpy()
-    state, _ = mujoco.rollout.rollout(model=model, data=data_list, initial_state = state.cpu().numpy(), nstep = 1, control=control, persistent_pool=True)
+    state, _ = mujoco.rollout.rollout(model=model, data=data_list, initial_state = state.cpu().numpy(), nstep = 1, control=control, persistent_pool=False)
     return torch.tensor(state).squeeze(1) # remove the nsteps dimension since it's only simulated for 1 time step
 
 goal_pos = np.array([0.0,0.03,0.1])
@@ -70,7 +69,7 @@ def running_cost(state,action):
     rot_cost = w_rot * 0.5 * np.square(qo_quat_diff).sum(-1).mean(-1)
     cost += pos_cost + rot_cost
 
-    return torch.tensor(cost, dtype=dtype, device=d)
+    return torch.tensor(1000*cost, dtype=dtype, device=d)
 
 def terminal_cost(state):
     cost = 0

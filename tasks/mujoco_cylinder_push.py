@@ -26,12 +26,12 @@ model.opt.timestep = 0.01
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 
-TIMESTEPS = 30  # T
+TIMESTEPS = 50  # T
 N_SAMPLES = 1000  # K
-ACTION_LOW = -10.0
-ACTION_HIGH = 10.0
+ACTION_LOW = torch.tensor(model.actuator_ctrlrange[:,0])
+ACTION_HIGH = torch.tensor(model.actuator_ctrlrange[:,1])
 
-nx = model.nq + model.nv # +1 since time is considered a state my mujoco
+nx = model.nq + model.nv +1 #since time is considered a state my mujoco
 
 
 d = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,7 +41,7 @@ if d == torch.device("cpu"):
     warnings.warn("No GPU device detected, using cpu instead", UserWarning)
 dtype = torch.float32
 
-noise_sigma = 2*torch.eye(model.nu, device=d, dtype=dtype)
+noise_sigma = (torch.max(ACTION_HIGH.abs(),ACTION_LOW.abs())*torch.eye(model.nu, dtype=dtype)).to(d)
 lambda_ = 1.
 
 def dynamics(state, perturbed_action):
@@ -85,15 +85,15 @@ def running_cost(state,action):
 
     cost += -(pusher_reward+velocity_reward + goal_reward)
 
-    return torch.tensor(1*cost, dtype=dtype, device=d)
+    return torch.tensor(100*cost, dtype=dtype, device=d)
 
 def terminal_cost(state):
     cost = 0
     return cost
 
 mppi = custom_mppi.CUSTOM_MPPI(dynamics, running_cost, nx, noise_sigma, use_mujoco_physics=False, terminal_cost = terminal_cost, num_samples=N_SAMPLES, time_steps=TIMESTEPS, steps_per_stage=20,
-                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d),
-                         u_max=torch.tensor(ACTION_HIGH, device=d), device=d)
+                         lambda_=lambda_, u_min=torch.tensor(ACTION_LOW, device=d, dtype=dtype),
+                         u_max=torch.tensor(ACTION_HIGH, device=d, dtype=dtype), device=d)
 # initilization
 theta = 2*np.pi*np.random.rand(2)
 data.qpos = np.array([np.cos(theta[0]),

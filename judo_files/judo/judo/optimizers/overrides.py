@@ -3,6 +3,7 @@
 from judo.config import set_config_overrides
 from judo.optimizers.cem import CrossEntropyMethodConfig
 from judo.optimizers.mppi import MPPIConfig
+from judo.optimizers.mppi_staged_rollout import MPPIStagedRolloutConfig
 from judo.optimizers.ps import PredictiveSamplingConfig
 
 
@@ -30,6 +31,15 @@ def set_default_cylinder_push_overrides() -> None:
     set_config_overrides(
         "cylinder_push",
         MPPIConfig,
+        {
+            "num_nodes": 4,
+            "num_rollouts": 32,
+            "use_noise_ramp": True,
+        },
+    )
+    set_config_overrides(
+        "cylinder_push",
+        MPPIStagedRolloutConfig,
         {
             "num_nodes": 4,
             "num_rollouts": 32,
@@ -68,6 +78,15 @@ def set_default_cartpole_overrides() -> None:
             "use_noise_ramp": True,
         },
     )
+    set_config_overrides(
+        "cartpole",
+        MPPIStagedRolloutConfig,
+        {
+            "num_nodes": 4,
+            "num_rollouts": 32,
+            "use_noise_ramp": True,
+        },
+    )
 
 
 def set_default_leap_cube_overrides() -> None:
@@ -97,6 +116,18 @@ def set_default_leap_cube_overrides() -> None:
     set_config_overrides(
         "leap_cube",
         MPPIConfig,
+        {
+            "num_nodes": 4,
+            "num_rollouts": 32,
+            "use_noise_ramp": True,
+            "noise_ramp": 4.0,
+            "sigma": 0.2,
+            "temperature": 0.0025,
+        },
+    )
+    set_config_overrides(
+        "leap_cube",
+        MPPIStagedRolloutConfig,
         {
             "num_nodes": 4,
             "num_rollouts": 32,
@@ -144,6 +175,18 @@ def set_default_leap_cube_down_overrides() -> None:
             "temperature": 0.0025,
         },
     )
+    set_config_overrides(
+        "leap_cube_down",
+        MPPIStagedRolloutConfig,
+        {
+            "num_nodes": 4,
+            "num_rollouts": 64,
+            "use_noise_ramp": True,
+            "noise_ramp": 4.0,
+            "sigma": 0.2,
+            "temperature": 0.0025,
+        },
+    )
 
 
 def set_default_caltech_leap_cube_overrides() -> None:
@@ -173,6 +216,18 @@ def set_default_caltech_leap_cube_overrides() -> None:
     set_config_overrides(
         "caltech_leap_cube",
         MPPIConfig,
+        {
+            "num_nodes": 4,
+            "num_rollouts": 32,
+            "use_noise_ramp": True,
+            "noise_ramp": 4.0,
+            "sigma": 0.2,
+            "temperature": 0.0025,
+        },
+    )
+    set_config_overrides(
+        "caltech_leap_cube",
+        MPPIStagedRolloutConfig,
         {
             "num_nodes": 4,
             "num_rollouts": 32,
@@ -213,6 +268,18 @@ def set_default_fr3_pick_overrides() -> None:
     set_config_overrides(
         "fr3_pick",
         MPPIConfig,
+        {
+            "num_nodes": 4,
+            "num_rollouts": 64,
+            "use_noise_ramp": True,
+            "noise_ramp": 4.0,
+            "sigma": 0.01,
+            "temperature": 0.002,
+        },
+    )
+    set_config_overrides(
+        "fr3_pick",
+        MPPIStagedRolloutConfig,
         {
             "num_nodes": 4,
             "num_rollouts": 64,

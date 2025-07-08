@@ -15,8 +15,8 @@ from judo.optimizers.base import Optimizer, OptimizerConfig
 class MPPIStagedRolloutConfig(OptimizerConfig):
     """Configuration for predictive sampling."""
 
-    sigma: float = 0.1
-    temperature: float = 0.05
+    sigma: float = 0.2
+    temperature: float = 0.0025
     chunk_steps: int = 10
     kde_bandwidth:float = 0.5
 

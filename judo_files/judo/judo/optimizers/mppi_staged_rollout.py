@@ -10,14 +10,14 @@ from judo.optimizers.base import Optimizer, OptimizerConfig
 
 @slider("sigma", 0.001, 1.0, 0.01)
 @slider("temperature", 0.001, 2.0, 0.05)
-@slider("chunk_steps", 1, 100, 1)
+# @slider("chunk_steps", 1, 100, 1)
 @dataclass
 class MPPIStagedRolloutConfig(OptimizerConfig):
     """Configuration for predictive sampling."""
 
     sigma: float = 0.2
     temperature: float = 0.0025
-    chunk_steps: int = 10
+    # chunk_steps: int = 10
     kde_bandwidth:float = 0.5
 
 
@@ -38,10 +38,10 @@ class MPPIStagedRollout(Optimizer[MPPIStagedRolloutConfig]):
         """Get the temperature value."""
         return self.config.temperature
     
-    @property
-    def chunk_steps(self) -> int:
-        """Get the chunk_steps value."""
-        return self.config.chunk_steps
+    # @property
+    # def chunk_steps(self) -> int:
+    #     """Get the chunk_steps value."""
+    #     return self.config.chunk_steps
     
     @property
     def kde_bandwidth(self) -> int:

@@ -192,7 +192,8 @@ class Controller:
             if isinstance(self.optimizer, MPPIStagedRollout):
                 #TODO add staged rollout
                 K, T, nu = self.rollout_controls.shape
-                N = self.optimizer.chunk_steps
+                N = int(np.floor(self.num_timesteps / self.optimizer_cfg.num_nodes))
+                # print(f'N:{N}')
                 stage_counter = 0
 
                 all_states = []
@@ -223,8 +224,8 @@ class Controller:
                     #     all_states[:,:t,:] = all_states[indices,:t,:]
                     #     all_sensors[:,:t,:] = all_sensors[indices,:t,:]
                     #     self.rollout_controls[:,:t,:] = self.rollout_controls[indices,:t,:]
-                    #     #TODO fix this need to sample knot first and then make spline
-                    #     # self.rollout_controls[:,t:,:] = self.rollout_controls[0,t:,:][None,:,:] + self.optimizer.sigma * np.random.randn(K, T-t, nu)
+                        #TODO fix this need to sample knot first and then make spline
+                        # self.rollout_controls[:,t:,:] = self.rollout_controls[0,t:,:][None,:,:] + self.optimizer.sigma * np.random.randn(K, T-t, nu)
 
                         
 
@@ -270,7 +271,6 @@ class Controller:
         self.nominal_knots = self.action_normalizer.denormalize(nominal_knots_normalized)
         self.times = new_times
         self.update_spline(self.times, self.nominal_knots)
-        print(self.spline)
         self.update_traces()
 
     def action(self, time: float) -> np.ndarray:

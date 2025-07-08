@@ -71,6 +71,30 @@ class MPPIStagedRollout(Optimizer[MPPIStagedRolloutConfig]):
         noised_knots = nominal_knots + sigma * np.random.randn(num_rollouts - 1, num_nodes, self.nu)
         sampled_knots = np.concatenate([nominal_knots[None], noised_knots])
         return sampled_knots
+    
+    def sample_partial_control_knots(self, nominal_knots: np.ndarray) -> np.ndarray:
+        """Samples control knots given a nominal control input.
+
+        MPPI adds fixed Gaussian noise to the nominal control input.
+
+        Args:
+            nominal_knots: The nominal control input to sample from. Shape=(num_nodes, nu).
+
+        Returns:
+            sampled_knots: The sampled control input. Shape=(num_rollouts, num_nodes, nu).
+        """
+        num_nodes = nominal_knots.shape[0]
+        num_rollouts = self.num_rollouts
+        _sigma = self.sigma
+
+        if self.use_noise_ramp:
+            ramp = self.noise_ramp * np.linspace(1 / num_nodes, 1, num_nodes, endpoint=True)[:, None]
+            sigma = ramp * _sigma
+        else:
+            sigma = _sigma
+        noised_knots = nominal_knots + sigma * np.random.randn(num_rollouts - 1, num_nodes, self.nu)
+        sampled_knots = np.concatenate([nominal_knots[None], noised_knots])
+        return sampled_knots
 
     def update_nominal_knots(self, sampled_knots: np.ndarray, rewards: np.ndarray) -> np.ndarray:
         """Update the nominal control knots based on the sampled controls and rewards.

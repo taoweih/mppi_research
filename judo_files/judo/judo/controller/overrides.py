@@ -11,7 +11,7 @@ def set_default_cylinder_push_overrides() -> None:
         ControllerConfig,
         {
             "horizon": 1.0,
-            "spline_order": "zero",
+            "spline_order": "linear",
         },
     )
 
@@ -23,7 +23,7 @@ def set_default_cartpole_overrides() -> None:
         ControllerConfig,
         {
             "horizon": 1.0,
-            "spline_order": "zero",
+            "spline_order": "linear",
         },
     )
 
@@ -35,7 +35,7 @@ def set_default_leap_cube_overrides() -> None:
         ControllerConfig,
         {
             "horizon": 1.0,
-            "spline_order": "cubic",
+            "spline_order": "linear",
             "max_num_traces": 1,
         },
     )
@@ -48,7 +48,7 @@ def set_default_leap_cube_down_overrides() -> None:
         ControllerConfig,
         {
             "horizon": 1.0,
-            "spline_order": "cubic",
+            "spline_order": "linear",
             "max_num_traces": 1,
         },
     )
@@ -61,7 +61,7 @@ def set_default_caltech_leap_cube_overrides() -> None:
         ControllerConfig,
         {
             "horizon": 1.0,
-            "spline_order": "cubic",
+            "spline_order": "linear",
             "max_num_traces": 1,
         },
     )

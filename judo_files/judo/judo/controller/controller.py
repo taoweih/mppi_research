@@ -210,7 +210,7 @@ class Controller:
                     next_state = next_state.squeeze(1)
                     next_sensor = next_sensor.squeeze(1)
 
-                    if (stage_counter % N == 0 and stage_counter != 0 and node_counter < self.optimizer_cfg.num_nodes-2):
+                    if (stage_counter % N == N-1 and stage_counter != 0 and node_counter < self.optimizer_cfg.num_nodes-2):
                         node_counter+=1
 
                         # estimate density and resample indices
@@ -219,7 +219,7 @@ class Controller:
 
                         score = kde.score_samples(next_state)
                         p_x = np.exp(score)
-                        inv_px = (1.0 / p_x+1e-5)**1.2
+                        inv_px = (1.0 / p_x+1e-5)**1.3
                         inv_px = inv_px / inv_px.sum() # K
 
                         indices = np.random.choice(len(inv_px), size=K, p = inv_px, replace=True)
@@ -251,7 +251,7 @@ class Controller:
                         partial_new_time = curr_time+np.linspace(self.task.dt*t, self.horizon, self.optimizer_cfg.num_nodes-node_counter, endpoint=True)
                         new_partial_splines = make_spline(partial_new_time, new_partial_control_knots, self.spline_order)
 
-                        remaining_rollout_time = self.task.dt * np.arange(self.num_timesteps-t)
+                        remaining_rollout_time = self.task.dt * np.arange(t,self.num_timesteps)
                         self.rollout_controls[:,t:,:]= new_partial_splines(curr_time + remaining_rollout_time)
 
                     all_states[:,t,:]=next_state

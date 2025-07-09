@@ -16,7 +16,7 @@ class MPPIStagedRolloutConfig(OptimizerConfig):
     """Configuration for predictive sampling."""
 
     sigma: float = 0.2
-    temperature: float = 0.0025
+    temperature: float = 0.5
     # chunk_steps: int = 10
     kde_bandwidth:float = 0.5
 

@@ -15,9 +15,9 @@ from judo.optimizers.base import Optimizer, OptimizerConfig
 class MPPIStagedRolloutConfig(OptimizerConfig):
     """Configuration for predictive sampling."""
 
-    sigma: float = 0.2
-    temperature: float = 0.5
-    # chunk_steps: int = 10
+    sigma: float = 0.1
+    temperature: float = 0.05
+    chunk_steps: int = 4
     kde_bandwidth:float = 0.5
 
 
@@ -38,10 +38,10 @@ class MPPIStagedRollout(Optimizer[MPPIStagedRolloutConfig]):
         """Get the temperature value."""
         return self.config.temperature
     
-    # @property
-    # def chunk_steps(self) -> int:
-    #     """Get the chunk_steps value."""
-    #     return self.config.chunk_steps
+    @property
+    def chunk_steps(self) -> int:
+        """Get the chunk_steps value."""
+        return self.config.chunk_steps
     
     @property
     def kde_bandwidth(self) -> int:

@@ -189,80 +189,152 @@ class Controller:
             self.task.pre_rollout(curr_state, self.task_cfg)
 
 
+            # if isinstance(self.optimizer, MPPIStagedRollout):
+            #     #TODO add staged rollout
+            #     K, T, nu = self.rollout_controls.shape
+            #     N = int(np.floor(self.num_timesteps / self.optimizer_cfg.num_nodes))
+            #     stage_counter = 0
+            #     node_counter = 0
+
+            #     all_states = []
+            #     all_sensors = []
+
+            #     all_states = np.zeros((K,T,curr_state.shape[-1]))
+            #     all_sensors = np.zeros((K,T,self.model.nsensordata))
+
+            #     curr_state = np.repeat(curr_state[None,:],K,axis=0) # K by nx
+
+            #     for t in range (T):
+            #         u = self.rollout_controls[:,t,:][:,None,:] # K by 1 by nu, added 1 to T dimension because rollout expects it
+            #         next_state, next_sensor = self.rollout_backend.rollout(self.model_data_pairs, curr_state, u, is_full_state=True)
+            #         next_state = next_state.squeeze(1)
+            #         next_sensor = next_sensor.squeeze(1)
+
+            #         if (stage_counter % N == N-1 and stage_counter != 0 and node_counter < self.optimizer_cfg.num_nodes-2):
+            #             node_counter+=1
+
+            #             # estimate density and resample indices
+            #             kde = KernelDensity(bandwidth=self.optimizer.kde_bandwidth, kernel="gaussian")
+            #             kde.fit(next_state)
+
+            #             score = kde.score_samples(next_state)
+            #             p_x = np.exp(score)
+            #             inv_px = (1.0 / p_x+1e-5)**1.1
+            #             inv_px = inv_px / inv_px.sum() # K
+
+            #             indices = np.random.choice(len(inv_px), size=K, p = inv_px, replace=True)
+
+            #             # reorder past states and controls based on indices
+            #             next_state = next_state[indices]
+            #             all_states[:,:t,:] = all_states[indices,:t,:]
+            #             all_sensors[:,:t,:] = all_sensors[indices,:t,:]
+            #             self.rollout_controls[:,:t,:] = self.rollout_controls[indices,:t,:]
+            #             self.candidate_knots[:,:node_counter,:] = self.candidate_knots[indices,:node_counter,:] 
+            #             candidate_knots_normalized[:,:node_counter,:] = candidate_knots_normalized[indices,:node_counter,:]
+
+
+            #             ### resample new controls
+            #             new_partial_control_knots_normalized = self.optimizer.sample_partial_control_knots(nominal_knots_normalized[node_counter:,:])
+            #             new_partial_control_knots_normalized = np.clip(
+            #                 new_partial_control_knots_normalized,
+            #                 self.action_normalizer.normalize(self.task.actuator_ctrlrange[:, 0]),
+            #                 self.action_normalizer.normalize(self.task.actuator_ctrlrange[:, 1]),
+            #             )
+            #             ### update candidate_knots_normalized to be used in update step
+            #             candidate_knots_normalized[:,node_counter:,:] = new_partial_control_knots_normalized
+
+            #             new_partial_control_knots = self.action_normalizer.denormalize(new_partial_control_knots_normalized)
+            #             self.candidate_knots[:,node_counter:,:] = new_partial_control_knots
+
+
+            #             ### update rollout_controls using new samples
+            #             partial_new_time = curr_time+np.linspace(self.task.dt*t, self.horizon, self.optimizer_cfg.num_nodes-node_counter, endpoint=True)
+            #             new_partial_splines = make_spline(partial_new_time, new_partial_control_knots, self.spline_order)
+
+            #             remaining_rollout_time = self.task.dt * np.arange(t,self.num_timesteps)
+            #             self.rollout_controls[:,t:,:]= new_partial_splines(curr_time + remaining_rollout_time)
+
+            #         all_states[:,t,:]=next_state
+            #         all_sensors[:,t,:]=next_sensor
+
+            #         stage_counter+=1
+
+            #         curr_state = next_state
+
+            #     self.states = all_states # K by T by nx
+            #     self.sensors = all_sensors
+
             if isinstance(self.optimizer, MPPIStagedRollout):
-                #TODO add staged rollout
-                K, T, nu = self.rollout_controls.shape
-                N = int(np.floor(self.num_timesteps / self.optimizer_cfg.num_nodes))
-                stage_counter = 0
-                node_counter = 0
+                curr_state = np.repeat(curr_state[None,:],self.optimizer.num_rollouts,axis=0) # batch initial state
 
-                all_states = []
-                all_sensors = []
+                num_stages = int(np.floor(self.optimizer.num_nodes / self.optimizer.chunk_steps))
+                nodes_per_stage = self.optimizer.chunk_steps
+                timesteps_per_stage = int(self.num_timesteps / self.optimizer.num_nodes)
+                print(f'num_timestpes:{self.num_timesteps}')
+                print(f'nodes_per_stage:{nodes_per_stage}')
+                print(f'num_stages:{num_stages}')
+                print(f'num_nodes:{self.optimizer.num_nodes}')
 
-                all_states = np.zeros((K,T,curr_state.shape[-1]))
-                all_sensors = np.zeros((K,T,self.model.nsensordata))
+                for n in range(num_stages-1):
+                    print(n)
+                    # partial rollout
+                    partial_rollout_control = self.rollout_controls[:,n*timesteps_per_stage:(n+1)*timesteps_per_stage,:]
+                    states_partial_rollout, sensors_partial_rollout = self.rollout_backend.rollout(self.model_data_pairs, curr_state, partial_rollout_control,is_full_state=True)
+                    self.states[:,n*timesteps_per_stage:(n+1)*timesteps_per_stage,:] = states_partial_rollout
+                    self.sensors[:,n*timesteps_per_stage:(n+1)*timesteps_per_stage,:] = sensors_partial_rollout
+                    latest_states = states_partial_rollout[:,-1,:]
 
-                curr_state = np.repeat(curr_state[None,:],K,axis=0) # K by nx
+                    
+                    # resampling indices
+                    kde = KernelDensity(bandwidth=self.optimizer.kde_bandwidth, kernel="gaussian")
+                    kde.fit(latest_states)
 
-                for t in range (T):
-                    u = self.rollout_controls[:,t,:][:,None,:] # K by 1 by nu, added 1 to T dimension because rollout expects it
-                    next_state, next_sensor = self.rollout_backend.rollout(self.model_data_pairs, curr_state, u, is_full_state=True)
-                    next_state = next_state.squeeze(1)
-                    next_sensor = next_sensor.squeeze(1)
+                    score = kde.score_samples(latest_states)
+                    p_x = np.exp(score)
+                    inv_px = (1.0 / p_x+1e-5)**1.2
+                    inv_px = inv_px / inv_px.sum()
 
-                    if (stage_counter % N == N-1 and stage_counter != 0 and node_counter < self.optimizer_cfg.num_nodes-2):
-                        node_counter+=1
+                    indices = np.random.choice(len(inv_px), size=self.optimizer.num_rollouts, p = inv_px, replace=True)
 
-                        # estimate density and resample indices
-                        kde = KernelDensity(bandwidth=self.optimizer.kde_bandwidth, kernel="gaussian")
-                        kde.fit(next_state)
+                    # reorder things around (only need to reorder up to current steps but won't matter since the later ones will be overwritten)
+                    curr_state = latest_states[indices]
+                    self.states = self.states[indices]
+                    self.sensors = self.sensors[indices]
+                    self.candidate_knots = self.candidate_knots[indices]
+                    candidate_knots_normalized = candidate_knots_normalized[indices]
 
-                        score = kde.score_samples(next_state)
-                        p_x = np.exp(score)
-                        inv_px = (1.0 / p_x+1e-5)**1.3
-                        inv_px = inv_px / inv_px.sum() # K
+                    # sample new knots
+                    new_partial_control_knots_normalized = self.optimizer.sample_partial_control_knots(nominal_knots_normalized[(n+1)*nodes_per_stage:,:])
+                    new_partial_control_knots_normalized = np.clip(
+                        new_partial_control_knots_normalized,
+                        self.action_normalizer.normalize(self.task.actuator_ctrlrange[:, 0]),
+                        self.action_normalizer.normalize(self.task.actuator_ctrlrange[:, 1]),
+                    )
+                    new_partial_control_knots = self.action_normalizer.denormalize(new_partial_control_knots_normalized)
 
-                        indices = np.random.choice(len(inv_px), size=K, p = inv_px, replace=True)
+                    # update candidate knots
+                    candidate_knots_normalized[:,(n+1)*nodes_per_stage:,:] = new_partial_control_knots_normalized
+                    self.candidate_knots[:,(n+1)*nodes_per_stage:,:] = new_partial_control_knots
 
-                        # reorder past states and controls based on indices
-                        next_state = next_state[indices]
-                        all_states[:,:t,:] = all_states[indices,:t,:]
-                        all_sensors[:,:t,:] = all_sensors[indices,:t,:]
-                        self.rollout_controls[:,:t,:] = self.rollout_controls[indices,:t,:]
-                        self.candidate_knots[:,:node_counter,:] = self.candidate_knots[indices,:node_counter,:] 
-                        candidate_knots_normalized[:,:node_counter,:] = candidate_knots_normalized[indices,:node_counter,:]
+                    ### update rollout_controls using new samples
+                    partial_new_time = curr_time+np.linspace(self.task.dt*(n+1)*timesteps_per_stage, self.horizon, self.optimizer_cfg.num_nodes-(n+1)*nodes_per_stage, endpoint=True)
+                    new_partial_splines = make_spline(partial_new_time, new_partial_control_knots, self.spline_order)
 
+                    remaining_rollout_time = self.task.dt * np.arange((n+1)*timesteps_per_stage,self.num_timesteps)
+                    self.rollout_controls[:,(n+1)*timesteps_per_stage:,:]= new_partial_splines(curr_time + remaining_rollout_time)
 
-                        ### resample new controls
-                        new_partial_control_knots_normalized = self.optimizer.sample_partial_control_knots(nominal_knots_normalized[node_counter:,:])
-                        new_partial_control_knots_normalized = np.clip(
-                            new_partial_control_knots_normalized,
-                            self.action_normalizer.normalize(self.task.actuator_ctrlrange[:, 0]),
-                            self.action_normalizer.normalize(self.task.actuator_ctrlrange[:, 1]),
-                        )
-                        ### update candidate_knots_normalized to be used in update step
-                        candidate_knots_normalized[:,node_counter:,:] = new_partial_control_knots_normalized
+                # rollout remaining control
+                partial_rollout_control = self.rollout_controls[:,(num_stages-1)*timesteps_per_stage:,:]
+                states_partial_rollout, sensors_partial_rollout = self.rollout_backend.rollout(self.model_data_pairs, curr_state, partial_rollout_control,is_full_state=True)
+                self.states[:,(num_stages-1)*timesteps_per_stage:,:] = states_partial_rollout
+                self.sensors[:,(num_stages-1)*timesteps_per_stage:,:] = sensors_partial_rollout
 
-                        new_partial_control_knots = self.action_normalizer.denormalize(new_partial_control_knots_normalized)
-                        self.candidate_knots[:,node_counter:,:] = new_partial_control_knots
-
-
-                        ### update rollout_controls using new samples
-                        partial_new_time = curr_time+np.linspace(self.task.dt*t, self.horizon, self.optimizer_cfg.num_nodes-node_counter, endpoint=True)
-                        new_partial_splines = make_spline(partial_new_time, new_partial_control_knots, self.spline_order)
-
-                        remaining_rollout_time = self.task.dt * np.arange(t,self.num_timesteps)
-                        self.rollout_controls[:,t:,:]= new_partial_splines(curr_time + remaining_rollout_time)
-
-                    all_states[:,t,:]=next_state
-                    all_sensors[:,t,:]=next_sensor
-
-                    stage_counter+=1
-
-                    curr_state = next_state
-
-                self.states = all_states # K by T by nx
-                self.sensors = all_sensors
+                
+                # need to update
+                # self.states, self.sensors
+                #   reorder after each stage
+                # candidate_knots_normalized, candidate_knots
+                # self.rollout_controls
             else:
                 self.states, self.sensors = self.rollout_backend.rollout(
                     self.model_data_pairs,

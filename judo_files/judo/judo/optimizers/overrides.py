@@ -32,7 +32,7 @@ def set_default_cylinder_push_overrides() -> None:
         "cylinder_push",
         MPPIConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
         },
@@ -41,7 +41,7 @@ def set_default_cylinder_push_overrides() -> None:
         "cylinder_push",
         MPPIStagedRolloutConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
         },
@@ -73,7 +73,7 @@ def set_default_cartpole_overrides() -> None:
         "cartpole",
         MPPIConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
         },
@@ -82,7 +82,7 @@ def set_default_cartpole_overrides() -> None:
         "cartpole",
         MPPIStagedRolloutConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
         },
@@ -117,7 +117,7 @@ def set_default_leap_cube_overrides() -> None:
         "leap_cube",
         MPPIConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
@@ -129,7 +129,7 @@ def set_default_leap_cube_overrides() -> None:
         "leap_cube",
         MPPIStagedRolloutConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
@@ -167,7 +167,7 @@ def set_default_leap_cube_down_overrides() -> None:
         "leap_cube_down",
         MPPIConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 64,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
@@ -179,7 +179,7 @@ def set_default_leap_cube_down_overrides() -> None:
         "leap_cube_down",
         MPPIStagedRolloutConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 64,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
@@ -217,7 +217,7 @@ def set_default_caltech_leap_cube_overrides() -> None:
         "caltech_leap_cube",
         MPPIConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
@@ -229,7 +229,7 @@ def set_default_caltech_leap_cube_overrides() -> None:
         "caltech_leap_cube",
         MPPIStagedRolloutConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 32,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
@@ -269,7 +269,7 @@ def set_default_fr3_pick_overrides() -> None:
         "fr3_pick",
         MPPIConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 64,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
@@ -281,7 +281,7 @@ def set_default_fr3_pick_overrides() -> None:
         "fr3_pick",
         MPPIStagedRolloutConfig,
         {
-            "num_nodes": 4,
+            "num_nodes": 16,
             "num_rollouts": 64,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,

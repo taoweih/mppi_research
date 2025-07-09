@@ -10,13 +10,13 @@ from judo.config import OverridableConfig
 from judo.gui import slider
 
 
-@slider("num_nodes", 3, 12, 1)
+@slider("num_nodes", 3, 20, 1)
 @dataclass
 class OptimizerConfig(OverridableConfig):
     """Base class for all optimizer configurations."""
 
-    num_rollouts: int = 16
-    num_nodes: int = 4
+    num_rollouts: int = 32
+    num_nodes: int = 16
     use_noise_ramp: bool = False
     noise_ramp: float = 2.5
 

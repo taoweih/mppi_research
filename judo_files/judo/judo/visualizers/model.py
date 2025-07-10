@@ -422,8 +422,8 @@ def add_mesh_from_file(
         mesh.apply_scale(mesh_scale)
 
     # If mesh does not have a good texture, apply MuJoCo one.
-    if isinstance(mesh.visual, ColorVisuals) and mjs_material is not None:
-        apply_mujoco_material(mesh, mjs_material)
+    # if isinstance(mesh.visual, ColorVisuals) and mjs_material is not None:
+    #     apply_mujoco_material(mesh, mjs_material)
 
     return target.scene.add_mesh_trimesh(name, mesh, position=pos, wxyz=quat)
 

@@ -127,7 +127,7 @@ def set_default_leap_cube_overrides() -> None:
             "num_rollouts": 256,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
-            "sigma": 0.2,
+            "sigma": 0.5,
             "temperature": 0.0025,
         },
     )
@@ -139,7 +139,7 @@ def set_default_leap_cube_overrides() -> None:
             "num_rollouts": 256,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
-            "sigma": 0.2,
+            "sigma": 0.5,
             "temperature": 0.0025,
         },
     )

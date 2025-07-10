@@ -26,8 +26,8 @@ model.opt.timestep = 0.01
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 
-TIMESTEPS = 50  # T
-N_SAMPLES = 1000  # K
+TIMESTEPS = 100  # T
+N_SAMPLES = 32  # K
 ACTION_LOW = torch.tensor(model.actuator_ctrlrange[:,0])
 ACTION_HIGH = torch.tensor(model.actuator_ctrlrange[:,1])
 

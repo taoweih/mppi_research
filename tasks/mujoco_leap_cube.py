@@ -59,14 +59,22 @@ if d == torch.device("cpu"):
 dtype = torch.float32
 
 noise_sigma = (torch.max(ACTION_HIGH.abs(),ACTION_LOW.abs())*torch.eye(model.nu, dtype=dtype)).to(d)
+<<<<<<< Updated upstream
 # noise_sigma = 0.2*torch.eye(model.nu, dtype=dtype).to(d)
+=======
+# noise_sigma = 0.5*torch.eye(model.nu, dtype=dtype).to(d)
+>>>>>>> Stashed changes
 lambda_ = 0.0025
 
 def dynamics(state, perturbed_action):
     #load state into a MjData instance of the model
     control = perturbed_action.unsqueeze(1).repeat_interleave(10,dim=1).cpu().numpy()
     state, _ = mujoco.rollout.rollout(model=sim_model, data=data_list, initial_state = state.cpu().numpy(), nstep = 10, control=control, persistent_pool=False)
+<<<<<<< Updated upstream
     return torch.tensor(state[:,-1,:]).squeeze(1) # remove the nsteps dimension since it's only simulated for 1 time step
+=======
+    return torch.tensor(state[:,-1,:]) # remove the nsteps dimension since it's only simulated for 1 time step
+>>>>>>> Stashed changes
 
 goal_pos = np.array([0.0,0.03,0.1])
 goal_quat = np.array([1.0,0.0,0.0,0.0]) #default goal_quat
@@ -85,7 +93,7 @@ def running_cost(state,action):
     rot_cost = w_rot * 0.5 * np.square(qo_quat_diff).sum(-1).mean(-1)
     cost += pos_cost + rot_cost
 
-    return torch.tensor(1000*cost, dtype=dtype, device=d)
+    return torch.tensor(100*cost, dtype=dtype, device=d)
 
 def terminal_cost(state):
     cost = 0
@@ -143,7 +151,11 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
 
         # now = time.time()
         action, _, _ = mppi.command(state)
+<<<<<<< Updated upstream
         print(action)
+=======
+        # print(action)
+>>>>>>> Stashed changes
         # print(f"time: {time.time() - now}")
  
         data.ctrl[:] = action.cpu().numpy()

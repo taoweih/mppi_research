@@ -276,13 +276,13 @@ class CUSTOM_MPPI():
 
         # # Unroll once for the policy for visualization
         policy_states = []
-        state = self.state.unsqueeze(0)
-        for t in range(self.T): 
-            u = self.U[t].unsqueeze(0)
-            next_state = self._dynamics(state, u, t)
-            state = next_state
-            policy_states.append(state.squeeze(0))
-        policy_states = torch.stack(policy_states, dim=0)
+        # state = self.state.unsqueeze(0)
+        # for t in range(self.T): 
+        #     u = self.U[t].unsqueeze(0)
+        #     next_state = self._dynamics(state, u, t)
+        #     state = next_state
+        #     policy_states.append(state.squeeze(0))
+        # policy_states = torch.stack(policy_states, dim=0)
 
         return control_input, self.k_states, policy_states     
 

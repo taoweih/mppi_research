@@ -5,7 +5,6 @@ from typing import Any
 
 import mujoco
 import numpy as np
-import sys, time
 
 from judo import MODEL_PATH
 from judo.gui import slider
@@ -53,8 +52,11 @@ class LeapCube(Task[LeapCubeConfig]):
             ]
         )  # fmt: skip
         self.n_success = 0
-        self.start_time = time.time()
         self.reset()
+
+    @property
+    def num_success(self):
+        return self.n_success
 
     def reward(
         self,
@@ -103,10 +105,6 @@ class LeapCube(Task[LeapCubeConfig]):
         if at_goal:
             self.n_success+=1
             self._update_goal_quat()
-        print(time.time() - self.start_time)
-        # if time.time() - self.start_time >= 60:
-        #     print(f'n_success:{self.n_success}')
-        #     sys.exit()
 
     def _update_goal_quat(self) -> None:
         """Updates the goal quaternion."""
@@ -130,7 +128,6 @@ class LeapCube(Task[LeapCubeConfig]):
         self.data.qvel[:] = 0.0
         self.data.ctrl[:] = self.reset_command
         self._update_goal_quat()
-        self.start_time = time.time()
         mujoco.mj_forward(self.model, self.data)
 
     def get_sim_metadata(self) -> dict[str, Any]:

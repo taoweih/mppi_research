@@ -15,6 +15,8 @@ from judo.controller import Controller, ControllerConfig
 from judo.optimizers import get_registered_optimizers
 from judo.tasks import get_registered_tasks
 
+import sys
+
 
 class ControllerNode(DoraNode):
     """Controller node."""
@@ -42,6 +44,8 @@ class ControllerNode(DoraNode):
         self.available_optimizers = get_registered_optimizers()
         self.available_tasks = get_registered_tasks()
         self.setup(init_task, init_optimizer)
+
+        self.num_iteration = 0
 
     def setup(self, task_name: str, optimizer_name: str) -> None:
         """Set up the task and optimizer for the controller."""
@@ -194,6 +198,10 @@ class ControllerNode(DoraNode):
             return
         elif self.paused:
             return
+        
+        if self.num_iteration >= 1000:
+            print(f'num_success:{self.task.num_success}')
+            sys.exit()
 
         # always profile the controller update action
         start = time.perf_counter()
@@ -201,6 +209,7 @@ class ControllerNode(DoraNode):
         end = time.perf_counter()
         self.node.send_output("plan_time", pa.array([end - start]))
         self.write_controls()
+        self.num_iteration+=1
 
     def spin(self) -> None:
         """Spin logic for the controller node."""

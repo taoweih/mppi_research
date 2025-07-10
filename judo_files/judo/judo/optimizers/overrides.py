@@ -33,8 +33,11 @@ def set_default_cylinder_push_overrides() -> None:
         MPPIConfig,
         {
             "num_nodes": 16,
-            "num_rollouts": 32,
-            "use_noise_ramp": True,
+            "num_rollouts": 256,
+            "use_noise_ramp": False,
+            "noise_ramp": 4.0,
+            "sigma": 0.1,
+            "temperature": 0.005,
         },
     )
     set_config_overrides(
@@ -42,8 +45,11 @@ def set_default_cylinder_push_overrides() -> None:
         MPPIStagedRolloutConfig,
         {
             "num_nodes": 16,
-            "num_rollouts": 32,
-            "use_noise_ramp": True,
+            "num_rollouts":256,
+            "use_noise_ramp": False,
+            "noise_ramp": 4.0,
+            "sigma": 0.1,
+            "temperature": 0.005,
         },
     )
 
@@ -118,7 +124,7 @@ def set_default_leap_cube_overrides() -> None:
         MPPIConfig,
         {
             "num_nodes": 16,
-            "num_rollouts": 32,
+            "num_rollouts": 128,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
             "sigma": 0.2,
@@ -130,7 +136,7 @@ def set_default_leap_cube_overrides() -> None:
         MPPIStagedRolloutConfig,
         {
             "num_nodes": 16,
-            "num_rollouts": 32,
+            "num_rollouts": 128,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
             "sigma": 0.2,

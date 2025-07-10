@@ -15,7 +15,7 @@ from judo.gui import slider
 class OptimizerConfig(OverridableConfig):
     """Base class for all optimizer configurations."""
 
-    num_rollouts: int = 32
+    num_rollouts: int = 256
     num_nodes: int = 16
     use_noise_ramp: bool = False
     noise_ramp: float = 2.5

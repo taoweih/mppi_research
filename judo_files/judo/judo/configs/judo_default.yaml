@@ -1,4 +1,4 @@
-task: cylinder_push
+task: leap_cube
 optimizer: mppi_staged_rollout
 
 dataflow:

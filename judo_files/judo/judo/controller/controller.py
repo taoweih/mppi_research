@@ -25,13 +25,13 @@ from judo.visualizers.utils import get_trace_sensors
 from judo.optimizers.mppi_staged_rollout import MPPIStagedRollout
 from sklearn.neighbors import KernelDensity
 
-@slider("horizon", 0.1, 10.0)
+@slider("horizon", 0.1, 20.0)
 @slider("control_freq", 0.25, 50.0)
 @dataclass
 class ControllerConfig(OverridableConfig):
     """Base controller config."""
 
-    horizon: float = 1.0
+    horizon: float = 10.0
     spline_order: Literal["zero", "linear", "cubic"] = "linear"
     control_freq: float = 20.0
     max_opt_iters: int = 1
@@ -269,14 +269,9 @@ class Controller:
 
                 num_stages = int(np.floor(self.optimizer.num_nodes / self.optimizer.chunk_steps))
                 nodes_per_stage = self.optimizer.chunk_steps
-                timesteps_per_stage = int(self.num_timesteps / self.optimizer.num_nodes)
-                print(f'num_timestpes:{self.num_timesteps}')
-                print(f'nodes_per_stage:{nodes_per_stage}')
-                print(f'num_stages:{num_stages}')
-                print(f'num_nodes:{self.optimizer.num_nodes}')
+                timesteps_per_stage = int(np.floor(self.num_timesteps / self.optimizer.num_nodes))*nodes_per_stage
 
                 for n in range(num_stages-1):
-                    print(n)
                     # partial rollout
                     partial_rollout_control = self.rollout_controls[:,n*timesteps_per_stage:(n+1)*timesteps_per_stage,:]
                     states_partial_rollout, sensors_partial_rollout = self.rollout_backend.rollout(self.model_data_pairs, curr_state, partial_rollout_control,is_full_state=True)

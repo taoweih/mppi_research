@@ -34,7 +34,7 @@ def set_default_leap_cube_overrides() -> None:
         "leap_cube",
         ControllerConfig,
         {
-            "horizon": 1.0,
+            "horizon": 10.0,
             "spline_order": "linear",
             "max_num_traces": 1,
         },

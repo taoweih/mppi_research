@@ -13,6 +13,9 @@ import custom_mppi
 import base_mppi
 import time
 
+import imageio
+from tqdm import tqdm
+
 from judo.utils.math_utils import quat_diff_so3
 
 # from judo mpc cylinder push task
@@ -24,11 +27,23 @@ MODEL = mujoco.MjModel.from_xml_path(model_xml_path)
 
 model = MODEL
 data = mujoco.MjData(model)
-model.opt.timestep = 0.01
+model.opt.timestep = 0.001
+sim_model = mujoco.MjModel.from_xml_path(model_xml_path)
+sim_model.opt.timestep = 0.02
+
+
+renderer = mujoco.Renderer(model,height=480, width=640)
+cam = mujoco.MjvCamera()
+mujoco.mjv_defaultCamera(cam)
+cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+cam.azimuth = 225
+cam.elevation = -45
+cam.distance = 1
+cam.lookat[:] = [0,0,0]
 
 data_list = [mujoco.MjData(model) for _ in range(NUM_THREAD)]
 
-TIMESTEPS = 30  # T
+TIMESTEPS = 5  # T
 N_SAMPLES = 200  # K
 ACTION_LOW = torch.tensor(model.actuator_ctrlrange[:,0])
 ACTION_HIGH = torch.tensor(model.actuator_ctrlrange[:,1])
@@ -44,13 +59,14 @@ if d == torch.device("cpu"):
 dtype = torch.float32
 
 noise_sigma = (torch.max(ACTION_HIGH.abs(),ACTION_LOW.abs())*torch.eye(model.nu, dtype=dtype)).to(d)
-lambda_ = 0.5
+# noise_sigma = 0.2*torch.eye(model.nu, dtype=dtype).to(d)
+lambda_ = 0.0025
 
 def dynamics(state, perturbed_action):
     #load state into a MjData instance of the model
-    control = perturbed_action.unsqueeze(1).cpu().numpy()
-    state, _ = mujoco.rollout.rollout(model=model, data=data_list, initial_state = state.cpu().numpy(), nstep = 1, control=control, persistent_pool=False)
-    return torch.tensor(state).squeeze(1) # remove the nsteps dimension since it's only simulated for 1 time step
+    control = perturbed_action.unsqueeze(1).repeat_interleave(10,dim=1).cpu().numpy()
+    state, _ = mujoco.rollout.rollout(model=sim_model, data=data_list, initial_state = state.cpu().numpy(), nstep = 10, control=control, persistent_pool=False)
+    return torch.tensor(state[:,-1,:]).squeeze(1) # remove the nsteps dimension since it's only simulated for 1 time step
 
 goal_pos = np.array([0.0,0.03,0.1])
 goal_quat = np.array([1.0,0.0,0.0,0.0]) #default goal_quat
@@ -127,10 +143,33 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
 
         # now = time.time()
         action, _, _ = mppi.command(state)
+        print(action)
         # print(f"time: {time.time() - now}")
  
         data.ctrl[:] = action.cpu().numpy()
-        mujoco.mj_step(model,data)
-        viewer.sync()
+        for i in range(100):
+            mujoco.mj_step(model,data)
+            viewer.sync()
+
+# frames = []
+
+# for _ in tqdm(range(300)):
+#     state = np.concatenate([[data.time],data.qpos, data.qvel])
+#     state = torch.tensor(state, dtype = dtype, device = d)
+
+#     # now = time.time()
+#     action, _, _ = mppi.command(state)
+#     # print(f"time: {time.time() - now}")
+
+#     data.ctrl[:] = action.cpu().numpy()
+#     # for i in range(30):
+#     mujoco.mj_step(model,data)
+#     mujoco.mjv_updateScene(model,data,mujoco.MjvOption(),None,cam,mujoco.mjtCatBit.mjCAT_ALL, renderer.scene)
+#     # renderer.update_scene(data)
+#     pixels = renderer.render()
+#     frames.append(pixels)
+
+# imageio.mimsave('simulation.mp4', frames, fps = 100)
+
 
 

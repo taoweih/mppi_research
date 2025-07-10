@@ -31,7 +31,7 @@ from sklearn.neighbors import KernelDensity
 class ControllerConfig(OverridableConfig):
     """Base controller config."""
 
-    horizon: float = 10.0
+    horizon: float = 2.0
     spline_order: Literal["zero", "linear", "cubic"] = "linear"
     control_freq: float = 20.0
     max_opt_iters: int = 1

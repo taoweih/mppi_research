@@ -124,7 +124,7 @@ def set_default_leap_cube_overrides() -> None:
         MPPIConfig,
         {
             "num_nodes": 16,
-            "num_rollouts": 128,
+            "num_rollouts": 256,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
             "sigma": 0.2,
@@ -136,7 +136,7 @@ def set_default_leap_cube_overrides() -> None:
         MPPIStagedRolloutConfig,
         {
             "num_nodes": 16,
-            "num_rollouts": 128,
+            "num_rollouts": 256,
             "use_noise_ramp": True,
             "noise_ramp": 4.0,
             "sigma": 0.2,

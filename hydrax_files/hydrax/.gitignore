@@ -1,0 +1,10 @@
+*.swp
+__pycache__
+*.zip
+.vscode
+*.pt
+*.pkl
+*.egg-info
+MUJOCO_LOG.TXT
+hydrax/recordings/
+.idea

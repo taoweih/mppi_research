@@ -143,7 +143,7 @@ class MPPIStagedRollout(SamplingBasedController):
             sites = self.task.get_trace_sites(x)
             return x, (x, cost, sites)
         
-        @partial(jax.vmap, in_axes=(None, 0))
+        @partial(jax.vmap, in_axes=(0, 0))
         def _rollout_fn(
            x: mjx.Data, u: jax.Array
         )-> Tuple[mjx.Data, Tuple[mjx.Data, jax.Array, jax.Array]]:
@@ -152,8 +152,13 @@ class MPPIStagedRollout(SamplingBasedController):
                 _scan_fn,  x, u
             )
             return final_state, (states, costs, trace_sites)
+        
+        #### TODO rollout and resample start ####
 
+        state = jax.tree_util.tree_map((lambda x: jnp.repeat(x[None, ...], self.num_samples, axis=0)), state)
         final_state, (states, costs, trace_sites) = _rollout_fn(state, controls)
+
+        #### rollout and resample end ####
 
         final_cost = jax.vmap(self.task.terminal_cost)(final_state)
         final_trace_sites = jax.vmap(self.task.get_trace_sites)(final_state)

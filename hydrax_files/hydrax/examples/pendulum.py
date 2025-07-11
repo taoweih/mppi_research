@@ -3,7 +3,7 @@ import argparse
 import mujoco
 import numpy as np
 
-from hydrax.algs import MPPI, PredictiveSampling
+from hydrax.algs import MPPI, PredictiveSampling, MPPIStagedRollout
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.pendulum import Pendulum
 
@@ -23,6 +23,7 @@ subparsers = parser.add_subparsers(
 )
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
+subparsers.add_parser("mppi_staged_rollout", help="Model Predictive Path Integral Control with Staged Rollout")
 args = parser.parse_args()
 
 # Set the controller based on command-line arguments
@@ -39,6 +40,17 @@ if args.algorithm == "ps" or args.algorithm is None:
 elif args.algorithm == "mppi":
     print("Running MPPI")
     ctrl = MPPI(
+        task,
+        num_samples=32,
+        noise_level=0.2,
+        temperature=0.1,
+        plan_horizon=1.0,
+        spline_type="zero",
+        num_knots=11,
+    )
+elif args.algorithm == "mppi_staged_rollout":
+    print("Running MPPI with staged rollout")
+    ctrl = MPPIStagedRollout(
         task,
         num_samples=32,
         noise_level=0.2,

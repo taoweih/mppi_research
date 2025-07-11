@@ -240,10 +240,10 @@ def run_interactive(  # noqa: PLR0912, PLR0915
 
             # Print some timing information
             rtr = step_dt / (time.time() - start_time)
-            print(
-                f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s",
-                end="\r",
-            )
+            # print(
+            #     f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s",
+            #     end="\r",
+            # )
 
     # Preserve the last printout
     print("")

@@ -85,7 +85,13 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
     )
     policy_params = controller.init_params(initial_knots=initial_knots)
-    jit_optimize = jax.jit(controller.optimize)
+    ### Wrap this to update param stored in controller
+    _jit_optimize = jax.jit(controller.optimize)
+    def jit_optimize(mjx_data, policy_params):
+        policy_params, rollouts = _jit_optimize(mjx_data, policy_params)
+        if hasattr(controller, 'params'):
+            controller.params = policy_params
+        return policy_params, rollouts
     jit_interp_func = jax.jit(controller.interp_func)
 
     # Warm-up the controller

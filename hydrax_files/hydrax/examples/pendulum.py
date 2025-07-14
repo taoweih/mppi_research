@@ -46,7 +46,7 @@ elif args.algorithm == "mppi":
         temperature=0.1,
         plan_horizon=1.0,
         spline_type="zero",
-        num_knots=11,
+        num_knots=16,
     )
 elif args.algorithm == "mppi_staged_rollout":
     print("Running MPPI with staged rollout")
@@ -57,7 +57,7 @@ elif args.algorithm == "mppi_staged_rollout":
         temperature=0.1,
         plan_horizon=1.0,
         spline_type="zero",
-        num_knots=11,
+        num_knots=16,
     )
 else:
     parser.error("Invalid algorithm")

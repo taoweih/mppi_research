@@ -189,23 +189,23 @@ class MPPIStagedRollout(SamplingBasedController):
 
             # resampling indices
             jnp_latest_state = jnp.concatenate([latest_state.qpos, latest_state.qvel],axis=1)
-            kde = gaussian_kde(jnp_latest_state,bw_method=self.kde_bandwidth)
+            kde = gaussian_kde(jnp_latest_state.T,bw_method=self.kde_bandwidth)
 
-            p_x = kde.pdf(jnp_latest_state)
-            inv_px = (1.0 / p_x+1e-5)**1.2
+            p_x = kde.pdf(jnp_latest_state.T)
+            inv_px = (1.0 / p_x+1e-5)**1.1
             inv_px = inv_px / inv_px.sum()
             
             indices = jax.random.categorical(jax.random.PRNGKey(0),jnp.log(inv_px),shape=(self.num_samples,))
 
             # reorder things around (only need to reorder up to current steps but won't matter since the later ones will be overwritten)
-            # TODO reorder states (in mjxData form), controls, knots, costs
             states = jax.tree_util.tree_map(lambda x: x[indices,...], states)
             controls = controls[indices,...]
             knots = knots[indices,...]
             costs = costs[indices,...]
             trace_sites = trace_sites[indices,...]
 
-            curr_state = jax.tree_util.tree_map(lambda x: x[:,-1,...], states)
+            curr_state = jax.tree_util.tree_map(lambda x: x[:,-1,...], partial_states)
+            curr_state = jax.tree_util.tree_map(lambda x: x[indices,...], curr_state)
 
             # sample new knots, update controls
             partial_param = self.params.replace(mean= self.params.mean[(n+1)*self.num_knots_per_stage:,:])

@@ -2,7 +2,7 @@ import argparse
 
 import mujoco
 
-from hydrax.algs import MPPI
+from hydrax.algs import MPPI, MPPIStagedRollout
 from hydrax.simulation.asynchronous import run_interactive as run_async
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.humanoid_standup import HumanoidStandup
@@ -30,20 +30,20 @@ if __name__ == "__main__":
     task = HumanoidStandup()
 
     # Set up the controller
-    ctrl = MPPI(
+    ctrl = MPPIStagedRollout(
         task,
-        num_samples=128,
-        noise_level=0.3,
+        num_samples=256,
+        noise_level=2.0,
         temperature=0.1,
-        num_randomizations=4,
-        plan_horizon=0.6,
+        num_randomizations=1,
+        plan_horizon=0.2,
         spline_type="zero",
-        num_knots=4,
+        num_knots=16,
     )
 
     # Define the model used for simulation (stiffer contact parameters)
     mj_model = task.mj_model
-    mj_model.opt.timestep = 0.01
+    mj_model.opt.timestep = 0.005
     mj_model.opt.o_solimp = [0.9, 0.95, 0.001, 0.5, 2]
     mj_model.opt.enableflags = mujoco.mjtEnableBit.mjENBL_OVERRIDE
 

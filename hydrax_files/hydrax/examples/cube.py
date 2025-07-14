@@ -4,7 +4,7 @@ from evosax.algorithms.distribution_based.cma_es import CMA_ES
 
 import mujoco
 
-from hydrax.algs import CEM, MPPI, Evosax, PredictiveSampling
+from hydrax.algs import CEM, MPPI, Evosax, PredictiveSampling, MPPIStagedRollout
 from hydrax.simulation.deterministic import run_interactive
 from hydrax.tasks.cube import CubeRotation
 
@@ -27,6 +27,7 @@ subparsers = parser.add_subparsers(
 )
 subparsers.add_parser("ps", help="Predictive Sampling")
 subparsers.add_parser("mppi", help="Model Predictive Path Integral Control")
+subparsers.add_parser("mppi_staged_rollout", help="Model Predictive Path Integral Control with Staged Rollout")
 subparsers.add_parser("cem", help="Cross-Entropy Method")
 subparsers.add_parser("cmaes", help="CMA-ES")
 args = parser.parse_args()
@@ -53,7 +54,19 @@ elif args.algorithm == "mppi":
         num_randomizations=8,
         plan_horizon=0.25,
         spline_type="zero",
-        num_knots=4,
+        num_knots=16,
+    )
+elif args.algorithm == "mppi_staged_rollout":
+    print("Running MPPI with staged rollout")
+    ctrl = MPPIStagedRollout(
+        task,
+        num_samples=128,
+        noise_level=0.2,
+        temperature=0.001,
+        num_randomizations=8,
+        plan_horizon=1.00,
+        spline_type="zero",
+        num_knots=16,
     )
 elif args.algorithm == "cem":
     print("Running CEM")

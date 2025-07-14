@@ -169,7 +169,7 @@ class MPPIStagedRollout(SamplingBasedController):
         ## Initilize full states and costs that will be updated after each stage
         states = jax.tree_util.tree_map(lambda x: jnp.zeros((self.num_samples, self.ctrl_steps)+x.shape, dtype=x.dtype),state)
         costs = jnp.zeros((self.num_samples, self.ctrl_steps))
-        trace_sites = jnp.zeros((self.num_samples, self.ctrl_steps) + state.site_xpos.shape)
+        trace_sites = jnp.zeros((self.num_samples, self.ctrl_steps) + self.task.get_trace_sites(state).shape)
 
         # Calculate some parameters for ease of use
         num_stages = int(math.floor(self.num_knots / self.num_knots_per_stage))
@@ -188,8 +188,9 @@ class MPPIStagedRollout(SamplingBasedController):
             states = jax.tree_util.tree_map(lambda x, new: x.at[:, n*timesteps_per_stage:(n+1)*timesteps_per_stage,...].set(new),states, partial_states)
 
             # resampling indices
-            jnp_latest_state = jnp.concatenate([latest_state.qpos, latest_state.qvel],axis=1)
-            kde = gaussian_kde(jnp_latest_state.T,bw_method=self.kde_bandwidth)
+            # jnp_latest_state = jnp.concatenate([latest_state.qpos, latest_state.qvel],axis=1)
+            jnp_latest_state = latest_state.qpos
+            kde = gaussian_kde(jnp_latest_state.T,bw_method=self.kde_bandwidth) # scipy kde expect data dimension to be first and batch dimension to be second
 
             p_x = kde.pdf(jnp_latest_state.T)
             inv_px = (1.0 / p_x+1e-5)**1.1

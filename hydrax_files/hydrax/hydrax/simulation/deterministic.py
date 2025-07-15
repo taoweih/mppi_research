@@ -2,6 +2,8 @@ import time
 from typing import Sequence
 import os
 
+from tqdm import tqdm
+
 import jax
 import jax.numpy as jnp
 import mujoco
@@ -231,6 +233,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             for i in range(sim_steps_per_replan):
                 mj_data.ctrl[:] = np.array(us[i])
                 mujoco.mj_step(mj_model, mj_data)
+                print(f'cost:{controller.task.running_cost(mj_data, mj_data.ctrl[:])}')
                 viewer.sync()
 
                 # Capture frame if recording
@@ -257,3 +260,174 @@ def run_interactive(  # noqa: PLR0912, PLR0915
     # Close the video recorder if recording was enabled
     if record_video and recorder is not None:
         recorder.stop()
+
+
+def run_benchmark(  # noqa: PLR0912, PLR0915
+    controller: SamplingBasedController,
+    mj_model: mujoco.MjModel,
+    mj_data: mujoco.MjData,
+    frequency: float,
+    initial_knots: jax.Array = None,
+    max_traces: int = 5,
+    reference: np.ndarray = None,
+    reference_fps: float = 30.0,
+    GOAL_THRESHOLD: float = 1.0,
+) -> int:
+    """Run an interactive simulation with the MPC controller.
+
+    This is a deterministic simulation, with the controller and simulation
+    running in the same thread. This is useful for repeatability, but is less
+    realistic than asynchronous simulation.
+
+    Note: the actual control frequency may be slightly different than what is
+    requested, because the control period must be an integer multiple of the
+    simulation time step.
+
+    Args:
+        controller: The controller instance, which includes the task
+                    (e.g., model, cost) definition.
+        mj_model: The MuJoCo model for the system to use for simulation. Could
+                  be slightly different from the model used by the controller.
+        mj_data: A MuJoCo data object containing the initial system state.
+        frequency: The requested control frequency (Hz) for replanning.
+        initial_knots: The initial knot points for the control spline at t=0
+        fixed_camera_id: The camera ID to use for the fixed camera view.
+        show_traces: Whether to show traces for the site positions.
+        max_traces: The maximum number of traces to show at once.
+        trace_width: The width of the trace lines (in pixels).
+        trace_color: The RGBA color of the trace lines.
+        reference: The reference trajectory (qs) to visualize.
+        reference_fps: The frame rate of the reference trajectory.
+        record_video: Whether to record a video of the simulation.
+    """
+    # Report the planning horizon in seconds for debugging
+    print(
+        f"Planning with {controller.ctrl_steps} steps "
+        f"over a {controller.plan_horizon} second horizon "
+        f"with {controller.num_knots} knots."
+    )
+
+    # Figure out how many sim steps to run before replanning
+    replan_period = 1.0 / frequency
+    sim_steps_per_replan = int(replan_period / mj_model.opt.timestep)
+    sim_steps_per_replan = max(sim_steps_per_replan, 1)
+    step_dt = sim_steps_per_replan * mj_model.opt.timestep
+    actual_frequency = 1.0 / step_dt
+    print(
+        f"Planning at {actual_frequency} Hz, "
+        f"simulating at {1.0 / mj_model.opt.timestep} Hz"
+    )
+
+    # Initialize the controller
+    mjx_data = mjx.put_data(mj_model, mj_data)
+    mjx_data = mjx_data.replace(
+        mocap_pos=mj_data.mocap_pos, mocap_quat=mj_data.mocap_quat
+    )
+    policy_params = controller.init_params(initial_knots=initial_knots)
+    ### Wrap this to update param stored in controller
+    _jit_optimize = jax.jit(controller.optimize)
+    def jit_optimize(mjx_data, policy_params):
+        policy_params, rollouts = _jit_optimize(mjx_data, policy_params)
+        if hasattr(controller, 'params'):
+            controller.params = policy_params
+        return policy_params, rollouts
+    jit_interp_func = jax.jit(controller.interp_func)
+
+    # Warm-up the controller
+    print("Jitting the controller...")
+    st = time.time()
+    policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+    policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+
+    tq = jnp.arange(0, sim_steps_per_replan) * mj_model.opt.timestep
+    tk = policy_params.tk
+    knots = policy_params.mean[None, ...]
+    _ = jit_interp_func(tq, tk, knots)
+    _ = jit_interp_func(tq, tk, knots)
+    print(f"Time to jit: {time.time() - st:.3f} seconds")
+    num_traces = min(rollouts.controls.shape[1], max_traces)
+
+    # Ghost reference setup
+    if reference is not None:
+        ref_data = mujoco.MjData(mj_model)
+        assert reference.shape[1] == mj_model.nq
+        ref_data.qpos[:] = reference[0, :]
+        mujoco.mj_forward(mj_model, ref_data)
+
+        vopt = mujoco.MjvOption()
+        vopt.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True  # Transparent.
+
+    # Start the simulation
+    num_sucess = 0
+
+    for _ in tqdm(range(100)):
+        mj_data.qpos[:] = mj_model.keyframe("stand").qpos
+        mj_data.qpos[3:7] = [0.7, 0.0, -0.7, 0.0]
+        mj_data.qpos[2] = 0.1
+        policy_params = controller.init_params(initial_knots=initial_knots)
+        reached_goal = False
+
+        for _ in range(200):
+            start_time = time.time()
+
+            # Set the start state for the controller
+            mjx_data = mjx_data.replace(
+                qpos=jnp.array(mj_data.qpos),
+                qvel=jnp.array(mj_data.qvel),
+                mocap_pos=jnp.array(mj_data.mocap_pos),
+                mocap_quat=jnp.array(mj_data.mocap_quat),
+                time=mj_data.time,
+            )
+
+
+            # Do a replanning step
+            plan_start = time.time()
+            policy_params, rollouts = jit_optimize(mjx_data, policy_params)
+            plan_time = time.time() - plan_start
+
+            # Update the ghost reference
+            if reference is not None:
+                t_ref = mj_data.time * reference_fps
+                i_ref = int(t_ref)
+                i_ref = min(i_ref, reference.shape[0] - 1)
+                ref_data.qpos[:] = reference[i_ref]
+                mujoco.mj_forward(mj_model, ref_data)
+
+            # query the control spline at the sim frequency
+            # (we assume the sim freq is the same as the low-level ctrl freq)
+            sim_dt = mj_model.opt.timestep
+            t_curr = mj_data.time
+
+            tq = jnp.arange(0, sim_steps_per_replan) * sim_dt + t_curr
+            tk = policy_params.tk
+            knots = policy_params.mean[None, ...]
+            us = np.asarray(jit_interp_func(tq, tk, knots))[0]  # (ss, nu)
+
+
+            # simulate the system between spline replanning steps
+            for i in range(sim_steps_per_replan):
+                mj_data.ctrl[:] = np.array(us[i])
+                mujoco.mj_step(mj_model, mj_data)
+                if controller.task.running_cost(mj_data, mj_data.ctrl[:]) < GOAL_THRESHOLD:
+                    reached_goal = True
+                    break
+
+            if reached_goal:
+                num_sucess += 1
+                break
+
+            # Try to run in roughly realtime
+            elapsed = time.time() - start_time
+            if elapsed < step_dt:
+                time.sleep(step_dt - elapsed)
+
+            # Print some timing information
+            rtr = step_dt / (time.time() - start_time)
+            # print(
+            #     f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s",
+            #     end="\r",
+            # )
+
+    # Preserve the last printout
+    print("")
+    return num_sucess

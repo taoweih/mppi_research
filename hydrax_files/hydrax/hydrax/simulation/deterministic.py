@@ -3,6 +3,7 @@ from typing import Sequence
 import os
 
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 import jax
 import jax.numpy as jnp
@@ -169,8 +170,10 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             mujoco.mjv_addGeoms(
                 mj_model, ref_data, vopt, pert, catmask, viewer.user_scn
             )
-
+        cost_array = []
         while viewer.is_running():
+
+        # for _ in range(200):
             start_time = time.time()
 
             # Set the start state for the controller
@@ -233,7 +236,6 @@ def run_interactive(  # noqa: PLR0912, PLR0915
             for i in range(sim_steps_per_replan):
                 mj_data.ctrl[:] = np.array(us[i])
                 mujoco.mj_step(mj_model, mj_data)
-                print(f'cost:{controller.task.running_cost(mj_data, mj_data.ctrl[:])}')
                 viewer.sync()
 
                 # Capture frame if recording
@@ -241,6 +243,10 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                     renderer.update_scene(mj_data, viewer.cam)
                     frame = renderer.render()
                     recorder.add_frame(frame.tobytes())
+
+            cost = controller.task.running_cost(mj_data, mj_data.ctrl[:])
+            cost_array.append(cost)
+            # print(f'cost:{controller.task.running_cost(mj_data, mj_data.ctrl[:])}')
 
             # Try to run in roughly realtime
             elapsed = time.time() - start_time
@@ -253,6 +259,13 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 f"Realtime rate: {rtr:.2f}, plan time: {plan_time:.4f}s",
                 end="\r",
             )
+        plt.figure()
+        plt.plot(cost_array)
+        # plt.ylim(9,13)
+        plt.xlabel("Iterations")
+        plt.ylabel("Current cost")
+        plt.title(f'Horizon: {controller.plan_horizon}s')
+        plt.show()
 
     # Preserve the last printout
     print("")
@@ -360,10 +373,24 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     # Start the simulation
     num_sucess = 0
 
-    for _ in tqdm(range(100)):
-        mj_data.qpos[:] = mj_model.keyframe("stand").qpos
-        mj_data.qpos[3:7] = [0.7, 0.0, -0.7, 0.0]
-        mj_data.qpos[2] = 0.1
+    for _ in tqdm(range(10)):
+
+        #### humanoid_standup
+        # mj_data.qpos[:] = mj_model.keyframe("stand").qpos
+        # mj_data.qpos[3:7] = [0.7, 0.0, -0.7, 0.0]
+        # mj_data.qpos[2] = 0.1
+        cube = mj_data.joint('cube_freejoint')
+        uvw = np.random.rand(3)
+        start_quat = np.array(
+            [
+                np.sqrt(1-uvw[0])*np.sin(2*np.pi*uvw[1]),
+                np.sqrt(1-uvw[0])*np.cos(2*np.pi*uvw[1]),
+                np.sqrt(uvw[0])*np.sin(2*np.pi*uvw[2]),
+                np.sqrt(uvw[0])*np.cos(2*np.pi*uvw[2]),
+            ]
+        )
+        cube.qpos[3:7] = start_quat
+        ### cube
         policy_params = controller.init_params(initial_knots=initial_knots)
         reached_goal = False
 

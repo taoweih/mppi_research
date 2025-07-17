@@ -30,15 +30,15 @@ if __name__ == "__main__":
     task = HumanoidStandup()
 
     # Set up the controller
-    ctrl = MPPI(
+    ctrl = MPPIStagedRollout(
         task,
         num_samples=1024,
         noise_level=0.3,
         temperature=0.1,
         num_randomizations=1,
-        plan_horizon=0.5,
+        plan_horizon=2.0,
         spline_type="zero",
-        num_knots=16,
+        num_knots=32,
     )
 
     # Define the model used for simulation (stiffer contact parameters)
@@ -50,8 +50,8 @@ if __name__ == "__main__":
     # Set the initial state so the robot falls and needs to stand back up
     mj_data = mujoco.MjData(mj_model)
     mj_data.qpos[:] = mj_model.keyframe("stand").qpos
-    # mj_data.qpos[3:7] = [0.7, 0.0, -0.7, 0.0]
-    # mj_data.qpos[2] = 0.1
+    mj_data.qpos[3:7] = [0.7, 0.0, -0.7, 0.0]
+    mj_data.qpos[2] = 0.1
 
     # Run the interactive simulation
     if args.asynchronous:
@@ -77,4 +77,5 @@ if __name__ == "__main__":
             mj_data,
             frequency=50,
             show_traces=False,
+            record_video=True,
         )

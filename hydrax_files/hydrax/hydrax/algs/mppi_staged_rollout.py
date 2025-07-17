@@ -188,8 +188,8 @@ class MPPIStagedRollout(SamplingBasedController):
             states = jax.tree_util.tree_map(lambda x, new: x.at[:, n*timesteps_per_stage:(n+1)*timesteps_per_stage,...].set(new),states, partial_states)
 
             # resampling indices
-            # jnp_latest_state = jnp.concatenate([latest_state.qpos, latest_state.qvel],axis=1)
-            jnp_latest_state = latest_state.qpos
+            jnp_latest_state = jnp.concatenate([latest_state.qpos, latest_state.qvel],axis=1)
+            # jnp_latest_state = latest_state.qpos
             kde = gaussian_kde(jnp_latest_state.T,bw_method=self.kde_bandwidth) # scipy kde expect data dimension to be first and batch dimension to be second
 
             p_x = kde.pdf(jnp_latest_state.T)

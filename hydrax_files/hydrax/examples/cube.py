@@ -63,7 +63,7 @@ elif args.algorithm == "mppi_staged_rollout":
     ctrl = MPPIStagedRollout(
         task,
         num_samples=128,
-        noise_level=0.2,
+        noise_level=0.4,
         temperature=0.001,
         num_randomizations=8,
         plan_horizon=1.00,

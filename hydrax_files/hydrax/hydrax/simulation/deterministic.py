@@ -373,12 +373,14 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     # Start the simulation
     num_sucess = 0
 
-    for _ in tqdm(range(10)):
+    for _ in range(100):
 
         #### humanoid_standup
         # mj_data.qpos[:] = mj_model.keyframe("stand").qpos
         # mj_data.qpos[3:7] = [0.7, 0.0, -0.7, 0.0]
         # mj_data.qpos[2] = 0.1
+
+        ### cube
         cube = mj_data.joint('cube_freejoint')
         uvw = np.random.rand(3)
         start_quat = np.array(
@@ -390,7 +392,8 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
             ]
         )
         cube.qpos[3:7] = start_quat
-        ### cube
+
+
         policy_params = controller.init_params(initial_knots=initial_knots)
         reached_goal = False
 

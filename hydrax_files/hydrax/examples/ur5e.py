@@ -20,7 +20,7 @@ if __name__ == "__main__":
         noise_level=0.3,
         temperature=0.1,
         num_randomizations=1,
-        plan_horizon=0.4,
+        plan_horizon=0.2,
         spline_type="zero",
         num_knots=16,
     )

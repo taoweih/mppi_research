@@ -44,15 +44,7 @@ class UR5e(Task):
         return mjx._src.math.rotate(upright, quat)
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
-        # """The running cost ℓ(xₜ, uₜ)."""
-        # orientation_cost = jnp.sum(
-        #     jnp.square(self._get_torso_orientation(state))
-        # )
-        # height_cost = jnp.square(
-        #     self._get_torso_height(state) - self.target_height
-        # )
-        # nominal_cost = jnp.sum(jnp.square(state.qpos[7:] - self.qstand[7:]))
-        # return 10.0 * orientation_cost + 10.0 * height_cost + 0.1 * nominal_cost
+        # mjx.forward()
         return 10
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:

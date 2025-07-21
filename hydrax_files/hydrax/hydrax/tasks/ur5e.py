@@ -21,31 +21,19 @@ class UR5e(Task):
             trace_sites= None #["imu_in_torso", "left_foot", "right_foot"],
         )
 
-        # # Get sensor and site ids
-        # self.orientation_sensor_id = mj_model.sensor("imu_in_torso_quat").id
-        # self.velocity_sensor_id = mj_model.sensor("imu_in_torso_linvel").id
-        # self.torso_id = mj_model.site("imu_in_torso").id
-
-        # # Set the target height
-        # self.target_height = 0.9
-
-        # # Standing configuration
-        # self.qstand = jnp.array(mj_model.keyframe("stand").qpos)
-
-    def _get_torso_height(self, state: mjx.Data) -> jax.Array:
-        """Get the height of the torso above the ground."""
-        return state.site_xpos[self.torso_id, 2]
-
-    def _get_torso_orientation(self, state: mjx.Data) -> jax.Array:
-        """Get the rotation from the current torso orientation to upright."""
-        sensor_adr = self.model.sensor_adr[self.orientation_sensor_id]
-        quat = state.sensordata[sensor_adr : sensor_adr + 4]
-        upright = jnp.array([0.0, 0.0, 1.0])
-        return mjx._src.math.rotate(upright, quat)
+        self.end_effector_pos_id = mujoco.mj_name2id(
+            self.mj_model, mujoco.mjtObj.mjOBJ_SITE, "attachment_site"
+        )
+        self.goal_pos_id = mujoco.mj_name2id(
+            self.mj_model, mujoco.mjtObj.mjOBJ_BODY, "goal"
+        )
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
-        # mjx.forward()
-        return 10
+        end_effector_pos = state.site_xpos[self.end_effector_pos_id]
+        goal_pos = state.xpos[self.goal_pos_id]
+
+        cost = 10*jnp.sum(jnp.square(end_effector_pos - goal_pos),axis=0)
+        return cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""

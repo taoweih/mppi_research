@@ -14,23 +14,23 @@ if __name__ == "__main__":
     task = UR5e()
 
     # Set up the controller
-    ctrl = MPPIStagedRollout(
+    ctrl = MPPI(
         task,
-        num_samples=128,
+        num_samples=512,
         noise_level=0.3,
-        temperature=0.1,
+        temperature=0.001,
         num_randomizations=1,
-        plan_horizon=0.2,
+        plan_horizon=1.0,
         spline_type="zero",
         num_knots=16,
     )
 
     # Define the model used for simulation
     mj_model = task.mj_model
-    mj_model.opt.timestep = 0.005
+    mj_model.opt.timestep = 0.01
 
     mj_data = mujoco.MjData(mj_model)
-    mj_data.qpos[:] = mj_model.keyframe("home").qpos
+    # mj_data.qpos[:] = mj_model.keyframe("home").qpos
 
     run_interactive(
             ctrl,

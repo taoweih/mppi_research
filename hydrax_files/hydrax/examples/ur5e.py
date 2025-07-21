@@ -16,9 +16,9 @@ if __name__ == "__main__":
     # Set up the controller
     ctrl = MPPI(
         task,
-        num_samples=512,
-        noise_level=0.3,
-        temperature=0.001,
+        num_samples=1024,
+        noise_level=0.4,
+        temperature=0.01,
         num_randomizations=1,
         plan_horizon=1.0,
         spline_type="zero",

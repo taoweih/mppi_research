@@ -14,26 +14,26 @@ class Drone(Task):
 
     def __init__(self) -> None:
         """Load the MuJoCo model and set task parameters."""
-        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/skydio/scene.xml")
+        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/skydio_x2/scene.xml")
         mj_model.opt.timestep = 0.005
         super().__init__(
             mj_model,
             trace_sites= None #["imu_in_torso", "left_foot", "right_foot"],
         )
 
-        # self.end_effector_pos_id = mujoco.mj_name2id(
-        #     self.mj_model, mujoco.mjtObj.mjOBJ_SITE, "attachment_site"
-        # )
-        # self.goal_pos_id = mujoco.mj_name2id(
-        #     self.mj_model, mujoco.mjtObj.mjOBJ_BODY, "goal"
-        # )
+        self.end_effector_pos_id = mujoco.mj_name2id(
+            self.mj_model, mujoco.mjtObj.mjOBJ_SITE, "tracking_site"
+        )
+        self.goal_pos_id = mujoco.mj_name2id(
+            self.mj_model, mujoco.mjtObj.mjOBJ_BODY, "goal"
+        )
 
     def running_cost(self, state: mjx.Data, control: jax.Array) -> jax.Array:
-        # end_effector_pos = state.site_xpos[self.end_effector_pos_id]
-        # goal_pos = state.xpos[self.goal_pos_id]
+        end_effector_pos = state.site_xpos[self.end_effector_pos_id]
+        goal_pos = state.xpos[self.goal_pos_id]
 
-        # cost = 10*jnp.sum(jnp.square(end_effector_pos - goal_pos),axis=0)
-        return 10
+        cost = 10*jnp.sum(jnp.square(end_effector_pos - goal_pos),axis=0)
+        return 100*cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""

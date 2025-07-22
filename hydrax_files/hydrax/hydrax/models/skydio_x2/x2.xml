@@ -49,7 +49,7 @@
       <site name="thrust2" pos="-.14 .18 .05"/>
       <site name="thrust3" pos=".14 .18 .08"/>
       <site name="thrust4" pos=".14 -.18 .08"/>
-      <site name="tracking_point" group="1" type="sphere" size="0.03" rgba="0 1 0 1" pos="0 0 0.07"/>
+      <site name="tracking_site" group="1" type="sphere" size="0.03" rgba="0 1 0 1" pos="0 0 0.07"/>
     </body>
   </worldbody>
 

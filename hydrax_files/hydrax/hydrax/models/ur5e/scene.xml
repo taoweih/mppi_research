@@ -15,6 +15,8 @@
     <geom name="obstacle1" type="cylinder" pos="0  0.3  0.20" size="0.065 0.20" rgba="0.6 0.6 0.6 1"/>
     <geom name="obstacle2" type="cylinder" pos="0.2  0.3  0.20" size="0.065 0.20" rgba="0.6 0.6 0.6 1"/>
     <geom name="obstacle3" type="cylinder" pos="-0.2  0.3  0.20" size="0.065 0.20" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle4" type="cylinder" pos="-0.2  0.5  0.20" size="0.065 0.20" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle5" type="cylinder" pos="-0.2  0.7  0.20" size="0.065 0.20" rgba="0.6 0.6 0.6 1"/>
   </worldbody>
 
   <visual>

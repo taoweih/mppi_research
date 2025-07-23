@@ -14,7 +14,7 @@ if __name__ == "__main__":
     task = UR5e()
 
     # Set up the controller
-    ctrl = MPPI(
+    ctrl = MPPIStagedRollout(
         task,
         num_samples=1024,
         noise_level=0.4,
@@ -36,7 +36,7 @@ if __name__ == "__main__":
             ctrl,
             mj_model,
             mj_data,
-            frequency=50,
+            frequency=25,
             show_traces=False,
             record_video=False,
         )

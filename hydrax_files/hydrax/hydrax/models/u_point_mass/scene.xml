@@ -1,0 +1,41 @@
+<mujoco model="point_mass scene">
+  <!-- Model that includes like lighting and a ground. -->
+  <include file="point_mass.xml"/>
+
+  <!-- Target sphere -->
+  <worldbody>
+    <body name="goal" mocap="true" pos="0 0.8 0.011">
+      <site type="sphere" size=".01" rgba="1 0 0 1"  />
+    </body>
+  </worldbody>
+
+  <!-- U obstacle -->
+  <worldbody>
+    <body name="U" pos="0 0 0" quat="0.707 0 0 -0.707">
+      <geom name="frontwall" size="0.01 0.2 0.2" type="box" pos="-0.2 0 0" rgba ="0.6 0.6 0.6 0.8"/>
+      <geom name="leftwall" size="0.3 0.01 0.2" type="box" pos="0.09 0.21 0" rgba ="0.6 0.6 0.6 0.8"/>
+      <geom name="rightwall" size="0.3 0.01 0.2" type="box" pos="0.09 -0.21 0" rgba ="0.6 0.6 0.6 0.8"/>
+    </body>
+
+  </worldbody>
+
+  <statistic center="0 0 0" extent="0.9"/>
+
+  <visual>
+    <headlight diffuse="1 1 1" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1"/>
+    <geom name="floor" size="0 0 .125" type="plane" material="groundplane"/>
+  </worldbody>
+
+</mujoco>

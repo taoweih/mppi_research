@@ -1,6 +1,19 @@
 <mujoco model="panda scene">
   <include file="mjx_panda.xml"/>
 
+  <!-- Target sphere -->
+  <worldbody>
+    <body name="goal" mocap="true" pos="0.8 0 0.5">
+      <site type="sphere" size=".03" rgba="1 0 0 0.5"  />
+    </body>
+  </worldbody>
+
+  <worldbody>
+    <geom name="obs1" pos="0.5 -0.05 0" type="box" size="0.05 0.05 1" rgba="0.5 0.5 0.5 1"/>
+    <geom name="obs2" pos="0.55 0.15 0" type="box" size="0.05 0.05 1" rgba="0.5 0.5 0.5 1"/>
+    <geom name="obs3" pos="0.8 -0.4 0" type="box" size="0.05 0.05 1" rgba="0.5 0.5 0.5 1"/>
+  </worldbody>
+
   <statistic center="0.3 0 0.4" extent="1"/>
 
   <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast">

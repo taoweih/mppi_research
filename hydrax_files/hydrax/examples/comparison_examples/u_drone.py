@@ -4,14 +4,14 @@ import mujoco
 
 from hydrax.algs import MPPI, MPPIStagedRollout
 from hydrax.simulation.deterministic import run_interactive
-from hydrax.tasks.drone import Drone
+from hydrax.tasks.u_drone import UDrone
 
 
 # Need to be wrapped in main loop for async simulation
 if __name__ == "__main__":
 
     # Define the task (cost and dynamics)
-    task = Drone()
+    task = UDrone()
 
     # Set up the controller
     ctrl = MPPI(
@@ -30,7 +30,8 @@ if __name__ == "__main__":
     mj_model.opt.timestep = 0.01
 
     mj_data = mujoco.MjData(mj_model)
-    # mj_data.qpos[:] = mj_model.keyframe("home").qpos
+    # mj_data.qpos[:] = mj_model.keyframe("hover").qpos
+    # mj_data.ctrl[:] = mj_model.keyframe("hover").ctrl
 
     run_interactive(
             ctrl,

@@ -9,12 +9,12 @@ from hydrax import ROOT
 from hydrax.task_base import Task
 
 
-class Drone(Task):
+class UDrone(Task):
     """Standup task for the Unitree G1 humanoid."""
 
     def __init__(self) -> None:
         """Load the MuJoCo model and set task parameters."""
-        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/skydio_x2/scene.xml")
+        mj_model = mujoco.MjModel.from_xml_path(ROOT + "/models/u_drone/scene.xml")
         mj_model.opt.timestep = 0.005
         super().__init__(
             mj_model,
@@ -33,7 +33,7 @@ class Drone(Task):
         goal_pos = state.xpos[self.goal_pos_id]
 
         cost = 10*jnp.sum(jnp.square(end_effector_pos - goal_pos),axis=0)
-        return 100*cost
+        return cost
 
     def terminal_cost(self, state: mjx.Data) -> jax.Array:
         """The terminal cost ϕ(x_T)."""

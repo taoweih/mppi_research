@@ -1,0 +1,89 @@
+<mujoco model="Skydio X2 scene">
+  <include file="x2.xml"/>
+
+  <!-- Target sphere -->
+  <worldbody>
+    <body name="goal" mocap="true" pos="-3 0 0.5">
+      <site type="sphere" size=".03" rgba="1 0 0 0.4"  />
+    </body>
+  </worldbody>
+
+  <!-- <worldbody> not working as of July 2025 since mjx doesn't support collision between box and cylinder yet
+    <geom name="frontwall" size="0.1 1 1" type="box" pos="-1 0 0" rgba ="0.6 0.6 0.6 0.5"/>
+    <geom name="leftwall" size="1 0.1 1" type="box" pos="-0.1 1.1 0" rgba ="0.6 0.6 0.6 0.5"/>
+    <geom name="rightwall" size="1 0.1 1" type="box" pos="-0.1 -1.1 0" rgba ="0.6 0.6 0.6 0.5"/>
+    <geom name="topwall" size="1 1.2 0.1" type="box" pos="-0.1 0 1.1" rgba ="0.6 0.6 0.6 0.5"/>
+  </worldbody> -->
+
+  <!-- Obstacles -->
+  <worldbody>
+    <body name="frontwall" pos="-1 0 0 " quat="0.707 0 0 0.707">
+      <geom name="f0" size="0.1 0.6" type="cylinder" pos="-0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="f1" size="0.1 0.6" type="cylinder" pos="-0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="f2" size="0.1 0.6" type="cylinder" pos="-0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="f3" size="0.1 0.6" type="cylinder" pos="0 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="f4" size="0.1 0.6" type="cylinder" pos="0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="f5" size="0.1 0.6" type="cylinder" pos="0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="f6" size="0.1 0.6" type="cylinder" pos="0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+    </body>
+
+    <body name="leftwall" pos="-0.30 0.8 0 " quat="1 0 0 0">
+      <geom name="l0" size="0.1 0.6" type="cylinder" pos="-0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l1" size="0.1 0.6" type="cylinder" pos="-0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l2" size="0.1 0.6" type="cylinder" pos="-0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l3" size="0.1 0.6" type="cylinder" pos="0 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l4" size="0.1 0.6" type="cylinder" pos="0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l5" size="0.1 0.6" type="cylinder" pos="0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l6" size="0.1 0.6" type="cylinder" pos="0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l7" size="0.1 0.6" type="cylinder" pos="0.8 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l8" size="0.1 0.6" type="cylinder" pos="1.0 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="l9" size="0.1 0.6" type="cylinder" pos="1.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+    </body>
+
+    <body name="rightwall" pos="-0.30 -0.8 0 " quat="1 0 0 0">
+      <geom name="r0" size="0.1 0.6" type="cylinder" pos="-0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r1" size="0.1 0.6" type="cylinder" pos="-0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r2" size="0.1 0.6" type="cylinder" pos="-0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r3" size="0.1 0.6" type="cylinder" pos="0 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r4" size="0.1 0.6" type="cylinder" pos="0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r5" size="0.1 0.6" type="cylinder" pos="0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r6" size="0.1 0.6" type="cylinder" pos="0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r7" size="0.1 0.6" type="cylinder" pos="0.8 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r8" size="0.1 0.6" type="cylinder" pos="1.0 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="r9" size="0.1 0.6" type="cylinder" pos="1.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+    </body>
+
+    <body name="topwall" pos="-0.3 0.6 1.2 " quat="1 1 0 0">
+      <geom name="t0" size="0.1 0.6" type="cylinder" pos="-0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t1" size="0.1 0.6" type="cylinder" pos="-0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t2" size="0.1 0.6" type="cylinder" pos="-0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t3" size="0.1 0.6" type="cylinder" pos="0 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t4" size="0.1 0.6" type="cylinder" pos="0.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t5" size="0.1 0.6" type="cylinder" pos="0.4 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t6" size="0.1 0.6" type="cylinder" pos="0.6 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t7" size="0.1 0.6" type="cylinder" pos="0.8 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t8" size="0.1 0.6" type="cylinder" pos="1.0 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+      <geom name="t9" size="0.1 0.6" type="cylinder" pos="1.2 0 0.6" rgba ="0.6 0.6 0.6 0.5"/>
+    </body>
+  </worldbody>
+
+  <statistic center="0 0 0.1" extent="0.6" meansize=".05"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="-20" elevation="-20" ellipsoidinertia="true"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+  </worldbody>
+</mujoco>

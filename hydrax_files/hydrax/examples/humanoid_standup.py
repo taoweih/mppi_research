@@ -30,15 +30,15 @@ if __name__ == "__main__":
     task = HumanoidStandup()
 
     # Set up the controller
-    ctrl = MPPIStagedRollout(
+    ctrl = MPPI(
         task,
         num_samples=1024,
         noise_level=0.3,
         temperature=0.1,
         num_randomizations=1,
-        plan_horizon=2.0,
+        plan_horizon=1.0,
         spline_type="zero",
-        num_knots=32,
+        num_knots=16,
     )
 
     # Define the model used for simulation (stiffer contact parameters)
@@ -77,5 +77,5 @@ if __name__ == "__main__":
             mj_data,
             frequency=50,
             show_traces=False,
-            record_video=True,
+            record_video=False,
         )

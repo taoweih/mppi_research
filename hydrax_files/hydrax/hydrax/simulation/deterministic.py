@@ -184,7 +184,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                 mocap_quat=jnp.array(mj_data.mocap_quat),
                 time=mj_data.time,
             )
-
+            
             # Do a replanning step
             plan_start = time.time()
             policy_params, rollouts = jit_optimize(mjx_data, policy_params)

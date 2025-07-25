@@ -14,7 +14,7 @@ if __name__ == "__main__":
     task = UR5e()
 
     # Set up the controller
-    ctrl = MPPIStagedRollout(
+    ctrl = MPPI(
         task,
         num_samples=1024,
         noise_level=0.4,

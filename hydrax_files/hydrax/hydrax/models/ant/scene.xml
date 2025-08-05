@@ -1,0 +1,42 @@
+<mujoco model="ant scene">
+  <include file="ant.xml"/>
+
+  <statistic center="0.3 0 0.4" extent="0.8"/>
+
+  <!-- Target sphere -->
+  <worldbody>
+    <body name="goal" mocap="true" pos="6 6 0.5">
+      <site type="sphere" size=".3" rgba="1 0 0 0.5"  />
+    </body>
+  </worldbody>
+
+  <!-- Obstacles -->
+  <worldbody>
+    <geom name="obstacle1" type="cylinder" pos="0  2  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle2" type="cylinder" pos="2  0  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle3" type="cylinder" pos="3  4  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle4" type="cylinder" pos="2  6  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle5" type="cylinder" pos="1  3  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle6" type="cylinder" pos="6  1  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle7" type="cylinder" pos="4  3  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+    <geom name="obstacle8" type="cylinder" pos="2  5  1" size="0.3 1" rgba="0.6 0.6 0.6 1"/>
+  </worldbody>
+
+  <visual>
+    <headlight diffuse="1 1 1" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1" directional="true" diffuse="1 1 1"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+  </worldbody>
+</mujoco>

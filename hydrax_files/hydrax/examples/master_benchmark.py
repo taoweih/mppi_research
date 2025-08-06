@@ -14,6 +14,11 @@ from hydrax.tasks.ant import Ant
 
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+
+from hydrax import ROOT
+from datetime import datetime
+from pathlib import Path
 
 
 # Need to be wrapped in main loop for async simulation
@@ -27,21 +32,26 @@ if __name__ == "__main__":
 
     NUM_KNOTS_PER_STAGE = 4
 
-    success = np.zeros(10)
-    for h in tqdm(range(1, 10+1)):
-        HORIZON = h*0.2
+    success = np.zeros((8, 3, 10))
 
-        task_list = [UPointMass(), UDrone(), CubeRotation(), HumanoidStandup(), UR5e(), ArmReaching(), PushT(), Ant()]
 
-        for i in range(len(task_list)):
-            task = task_list[i]
+
+    task_list = [UPointMass(), UDrone(), CubeRotation(), HumanoidStandup(), UR5e(), ArmReaching(), PushT(), Ant()]
+
+    for i in range(len(task_list)):
+        task = task_list[i]
+
+        for h in range(10):
+            HORIZON = (h+1)*0.2
+
             ctrl_list = [MPPI(task,num_samples=NUM_SAMPLES,noise_level=NOISE_LEVEL,temperature=TEMPERATURE,
-                              num_randomizations=1,plan_horizon=HORIZON,spline_type=SPLINE_TYPE,num_knots=NUM_SAMPLES), 
+                            num_randomizations=1,plan_horizon=HORIZON,spline_type=SPLINE_TYPE,num_knots=NUM_KNOTS), 
 
-                         MPPIStagedRollout(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, temperature=TEMPERATURE, 
-                                           num_knots_per_stage=NUM_KNOTS_PER_STAGE, plan_horizon= HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
+                        MPPIStagedRollout(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, temperature=TEMPERATURE, 
+                                        num_knots_per_stage=NUM_KNOTS_PER_STAGE, plan_horizon= HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
 
-                         PredictiveSampling()]
+                        PredictiveSampling(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, plan_horizon=HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS)]
+            
             for j in range(len(ctrl_list)):
                 ctrl = ctrl_list[j]
 
@@ -50,23 +60,34 @@ if __name__ == "__main__":
 
                 mj_data = mujoco.MjData(mj_model)
 
-                run_interactive(
-                        ctrl,
-                        mj_model,
-                        mj_data,
-                        frequency=50,
-                        show_traces=False,
-                        record_video=False,
-                    )
+                # num_success = run_benchmark(
+                #     ctrl,
+                #     mj_model,
+                #     mj_data,
+                #     frequency=25,
+                #     GOAL_THRESHOLD=1,
+                # )
+                num_success = h+j
 
-    # # Set up the controller
-    # ctrl = MPPI(
-    #     task,
-    #     num_samples=512,
-    #     noise_level=0.2,
-    #     temperature=0.001,
-    #     num_randomizations=1,
-    #     plan_horizon=2.0,
-    #     spline_type="zero",
-    #     num_knots=16,
-    # )
+                success[i, j, h] = num_success
+
+    # Plotting
+    curr_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    save_dir = Path(ROOT)/"benchmark"/f"run_{curr_time}"
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    for i in range(success.shape[0]):
+        plt.figure()
+
+        for j in range(success.shape[1]):
+            plt.plot(np.linspace(0.2, 2.0, 10), success[i, j], label=type(ctrl_list[j]).__name__)
+
+        plt.title(f'Task {type(task_list[i]).__name__}')
+        plt.xlabel("Horizon (seconds)")
+        plt.ylabel("Sucess Rate (%)")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(save_dir / f"task_{type(task_list[i]).__name__}.png", dpi=300)
+        plt.close()
+        
+

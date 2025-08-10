@@ -1,6 +1,6 @@
 import mujoco
 
-from hydrax.algs import MPPI, MPPIStagedRollout, PredictiveSampling
+from hydrax.algs import MPPI, MPPIStagedRollout, PredictiveSampling, DIAL, CEM
 from hydrax.simulation.deterministic import run_interactive, run_benchmark
 
 from hydrax.tasks.u_point_mass import UPointMass
@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from hydrax import ROOT
 from datetime import datetime
 from pathlib import Path
+import os
 
 
 # Need to be wrapped in main loop for async simulation
@@ -44,8 +45,8 @@ if __name__ == "__main__":
         for h in range(10):
             HORIZON = (h+1)*0.2
 
-            ctrl_list = [MPPI(task,num_samples=NUM_SAMPLES,noise_level=NOISE_LEVEL,temperature=TEMPERATURE,
-                            num_randomizations=1,plan_horizon=HORIZON,spline_type=SPLINE_TYPE,num_knots=NUM_KNOTS), 
+            ctrl_list = [MPPI(task,num_samples=NUM_SAMPLES,noise_level=NOISE_LEVEL,temperature=TEMPERATURE
+                              ,plan_horizon=HORIZON,spline_type=SPLINE_TYPE,num_knots=NUM_KNOTS), 
 
                         MPPIStagedRollout(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, temperature=TEMPERATURE, 
                                         num_knots_per_stage=NUM_KNOTS_PER_STAGE, plan_horizon= HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
@@ -75,6 +76,36 @@ if __name__ == "__main__":
     curr_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     save_dir = Path(ROOT)/"benchmark"/f"run_{curr_time}"
     save_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = os.path.join(save_dir, "params.txt")
+
+    params = f'''
+        MPPI:
+            Number of samples: {NUM_SAMPLES}
+            Noise level: {NOISE_LEVEL}
+            Temperature: {TEMPERATURE}
+            Horizon: {HORIZON}s
+            Spline type: {SPLINE_TYPE}
+            Number of knots: {NUM_KNOTS}
+        MPPI staged rollout:
+            Number of samples: {NUM_SAMPLES}
+            Noise level: {NOISE_LEVEL}
+            Temperature: {TEMPERATURE}
+            Horizon: {HORIZON}s
+            Spline type: {SPLINE_TYPE}
+            Number of knots: {NUM_KNOTS}
+            Number of knots per stage: {NUM_KNOTS_PER_STAGE}
+        PS:
+            Number of samples: {NUM_SAMPLES}
+            Noise level: {NOISE_LEVEL}
+            Horizon: {HORIZON}s
+            Spline type: {SPLINE_TYPE}
+            Number of knots: {NUM_KNOTS}
+        '''
+
+    with open(file_path,'w') as f:
+        f.write(params)
+    f.close()
 
     for i in range(success.shape[0]):
         plt.figure()

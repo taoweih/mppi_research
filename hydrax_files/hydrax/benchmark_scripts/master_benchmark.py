@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     # Plotting
     curr_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    save_dir = Path(ROOT)/"benchmark"/f"run_{curr_time}"
+    save_dir = Path(ROOT)/"benchmark"/f"all_task_benchmark_{curr_time}"
     save_dir.mkdir(parents=True, exist_ok=True)
 
     file_path = os.path.join(save_dir, "params.txt")

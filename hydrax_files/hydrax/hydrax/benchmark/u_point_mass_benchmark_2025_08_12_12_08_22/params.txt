@@ -1,0 +1,41 @@
+PS:
+    Number of samples: 512
+    Noise level: 0.4
+    Horizon: 2.0s
+    Spline type: zero
+    Number of knots: 16
+MPPI:
+    Number of samples: 512
+    Noise level: 0.4
+    Temperature: 0.001
+    Horizon: 2.0s
+    Spline type: zero
+    Number of knots: 16
+MPPI staged rollout:
+    Number of samples: 512
+    Noise level: 0.4
+    Temperature: 0.001
+    Horizon: 2.0s
+    Spline type: zero
+    Number of knots: 16
+    Number of knots per stage: 4
+DIAL:
+    Number of samples: 512
+    Noise level: 0.4
+    Temperature: 0.001
+    Horizon: 2.0s
+    Spline type: zero
+    Number of knots: 16
+    Beta opt iter: 1
+    Beta horizon: 1
+CEM:
+    Number of samples: 512
+    Temperature: 0.001
+    Horizon: 2.0s
+    Spline type: zero
+    Number of knots: 16
+    Number of elites: 128
+    Sigma start: 0.4
+    Sigma min: 0.1
+    Explore fraction: 0.5
+    

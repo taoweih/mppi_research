@@ -17,10 +17,10 @@ if __name__ == "__main__":
     ctrl = MPPI(
         task,
         num_samples=512,
-        noise_level=0.2,
-        temperature=0.001,
+        noise_level=2.0,
+        temperature=0.01,
         num_randomizations=1,
-        plan_horizon=2.0,
+        plan_horizon=1.5,
         spline_type="zero",
         num_knots=16,
     )

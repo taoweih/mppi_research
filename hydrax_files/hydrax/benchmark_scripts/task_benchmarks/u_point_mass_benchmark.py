@@ -17,29 +17,47 @@ import os
 
 # Need to be wrapped in main loop for async simulation
 if __name__ == "__main__":
-
-    NUM_SAMPLES = 1024
-    NOISE_LEVEL = 0.2
-    TEMPERATURE = 0.001
+    # common parameters
+    NUM_SAMPLES = 512
+    NOISE_LEVEL = 2.0
+    TEMPERATURE = 0.01
     NUM_KNOTS = 16
     SPLINE_TYPE = "zero"
 
+    # MPPI staged rollout specific
     NUM_KNOTS_PER_STAGE = 4
 
-    success = np.zeros((3, 10))
+    # DIAL specific
+    BETA_OPT_ITER = 1
+    BETA_HORIZON = 1
+
+    # CEM specific
+    NUM_ELITES = int(NUM_SAMPLES/4)
+    SIGMA_START = NOISE_LEVEL
+    SIGMA_MIN = NOISE_LEVEL/4
+    EXPLORE_FRACTION = 0.5
+    
+
+    success = np.zeros((5, 10))
 
     task = UPointMass()
 
-    for h in range(10):
+    for h in tqdm(range(10)):
         HORIZON = (h+1)*0.2
 
-        ctrl_list = [MPPI(task,num_samples=NUM_SAMPLES,noise_level=NOISE_LEVEL,temperature=TEMPERATURE
+        ctrl_list = [PredictiveSampling(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, plan_horizon=HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
+                     
+                    MPPI(task,num_samples=NUM_SAMPLES,noise_level=NOISE_LEVEL,temperature=TEMPERATURE
                             ,plan_horizon=HORIZON,spline_type=SPLINE_TYPE,num_knots=NUM_KNOTS), 
 
                     MPPIStagedRollout(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, temperature=TEMPERATURE, 
                                     num_knots_per_stage=NUM_KNOTS_PER_STAGE, plan_horizon= HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
 
-                    PredictiveSampling(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, plan_horizon=HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS)]
+                    DIAL(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, beta_opt_iter=BETA_OPT_ITER, beta_horizon=BETA_HORIZON, temperature=TEMPERATURE, plan_horizon=HORIZON,
+                         spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
+
+                    CEM(task,num_samples=NUM_SAMPLES, num_elites=NUM_ELITES, sigma_start=SIGMA_START, sigma_min=SIGMA_MIN, explore_fraction=EXPLORE_FRACTION, plan_horizon=HORIZON, 
+                        spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS)]
         
         for j in range(len(ctrl_list)):
             ctrl = ctrl_list[j]
@@ -49,14 +67,14 @@ if __name__ == "__main__":
 
             mj_data = mujoco.MjData(mj_model)
 
-            # num_success = run_benchmark(
-            #     ctrl,
-            #     mj_model,
-            #     mj_data,
-            #     frequency=25,
-            #     GOAL_THRESHOLD=1,
-            # )
-            num_success = h+j
+            num_success = run_benchmark(
+                ctrl,
+                mj_model,
+                mj_data,
+                frequency=25,
+                GOAL_THRESHOLD=0.05,
+            )
+            # num_success = h+j
 
             success[j, h] = num_success
 
@@ -67,34 +85,53 @@ if __name__ == "__main__":
 
     file_path = os.path.join(save_dir, "params.txt")
 
-    params = f'''
-        MPPI:
-            Number of samples: {NUM_SAMPLES}
-            Noise level: {NOISE_LEVEL}
-            Temperature: {TEMPERATURE}
-            Horizon: {HORIZON}s
-            Spline type: {SPLINE_TYPE}
-            Number of knots: {NUM_KNOTS}
-        MPPI staged rollout:
-            Number of samples: {NUM_SAMPLES}
-            Noise level: {NOISE_LEVEL}
-            Temperature: {TEMPERATURE}
-            Horizon: {HORIZON}s
-            Spline type: {SPLINE_TYPE}
-            Number of knots: {NUM_KNOTS}
-            Number of knots per stage: {NUM_KNOTS_PER_STAGE}
-        PS:
-            Number of samples: {NUM_SAMPLES}
-            Noise level: {NOISE_LEVEL}
-            Horizon: {HORIZON}s
-            Spline type: {SPLINE_TYPE}
-            Number of knots: {NUM_KNOTS}
-        '''
+    params = f'''PS:
+    Number of samples: {NUM_SAMPLES}
+    Noise level: {NOISE_LEVEL}
+    Horizon: {HORIZON}s
+    Spline type: {SPLINE_TYPE}
+    Number of knots: {NUM_KNOTS}
+MPPI:
+    Number of samples: {NUM_SAMPLES}
+    Noise level: {NOISE_LEVEL}
+    Temperature: {TEMPERATURE}
+    Horizon: {HORIZON}s
+    Spline type: {SPLINE_TYPE}
+    Number of knots: {NUM_KNOTS}
+MPPI staged rollout:
+    Number of samples: {NUM_SAMPLES}
+    Noise level: {NOISE_LEVEL}
+    Temperature: {TEMPERATURE}
+    Horizon: {HORIZON}s
+    Spline type: {SPLINE_TYPE}
+    Number of knots: {NUM_KNOTS}
+    Number of knots per stage: {NUM_KNOTS_PER_STAGE}
+DIAL:
+    Number of samples: {NUM_SAMPLES}
+    Noise level: {NOISE_LEVEL}
+    Temperature: {TEMPERATURE}
+    Horizon: {HORIZON}s
+    Spline type: {SPLINE_TYPE}
+    Number of knots: {NUM_KNOTS}
+    Beta opt iter: {BETA_OPT_ITER}
+    Beta horizon: {BETA_HORIZON}
+CEM:
+    Number of samples: {NUM_SAMPLES}
+    Temperature: {TEMPERATURE}
+    Horizon: {HORIZON}s
+    Spline type: {SPLINE_TYPE}
+    Number of knots: {NUM_KNOTS}
+    Number of elites: {NUM_ELITES}
+    Sigma start: {SIGMA_START}
+    Sigma min: {SIGMA_MIN}
+    Explore fraction: {EXPLORE_FRACTION}
+    '''
 
     with open(file_path,'w') as f:
         f.write(params)
     f.close()
 
+    print(success)
 
     plt.figure()
 

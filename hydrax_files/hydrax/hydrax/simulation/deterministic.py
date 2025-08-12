@@ -16,6 +16,8 @@ from hydrax.alg_base import SamplingBasedController
 from hydrax import ROOT
 from hydrax.utils.video import VideoRecorder
 
+import copy
+
 """
 Tools for deterministic (synchronous) simulation, with the simulator and
 controller running one after the other in the same thread.
@@ -244,7 +246,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
                     frame = renderer.render()
                     recorder.add_frame(frame.tobytes())
 
-            cost = controller.task.running_cost(mj_data, mj_data.ctrl[:])
+            cost = controller.task.success_function(mj_data, mj_data.ctrl[:])
             cost_array.append(cost)
             # print(f'cost:{controller.task.running_cost(mj_data, mj_data.ctrl[:])}')
 
@@ -263,7 +265,7 @@ def run_interactive(  # noqa: PLR0912, PLR0915
         plt.plot(cost_array)
         # plt.ylim(9,13)
         plt.xlabel("Iterations")
-        plt.ylabel("Current cost")
+        plt.ylabel("Current objective")
         plt.title(f'Horizon: {controller.plan_horizon}s')
         plt.show()
 
@@ -315,6 +317,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     """
     # Report the planning horizon in seconds for debugging
     print(
+        f"Using controller {type(controller).__name__}\n"
         f"Planning with {controller.ctrl_steps} steps "
         f"over a {controller.plan_horizon} second horizon "
         f"with {controller.num_knots} knots."
@@ -373,7 +376,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     # Start the simulation
     num_sucess = 0
 
-    for _ in range(100):
+    for _ in range(10):
 
         #### humanoid_standup
         # mj_data.qpos[:] = mj_model.keyframe("stand").qpos
@@ -381,23 +384,24 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
         # mj_data.qpos[2] = 0.1
 
         ### cube
-        cube = mj_data.joint('cube_freejoint')
-        uvw = np.random.rand(3)
-        start_quat = np.array(
-            [
-                np.sqrt(1-uvw[0])*np.sin(2*np.pi*uvw[1]),
-                np.sqrt(1-uvw[0])*np.cos(2*np.pi*uvw[1]),
-                np.sqrt(uvw[0])*np.sin(2*np.pi*uvw[2]),
-                np.sqrt(uvw[0])*np.cos(2*np.pi*uvw[2]),
-            ]
-        )
-        cube.qpos[3:7] = start_quat
+        # cube = mj_data.joint('cube_freejoint')
+        # uvw = np.random.rand(3)
+        # start_quat = np.array(
+        #     [
+        #         np.sqrt(1-uvw[0])*np.sin(2*np.pi*uvw[1]),
+        #         np.sqrt(1-uvw[0])*np.cos(2*np.pi*uvw[1]),
+        #         np.sqrt(uvw[0])*np.sin(2*np.pi*uvw[2]),
+        #         np.sqrt(uvw[0])*np.cos(2*np.pi*uvw[2]),
+        #     ]
+        # )
+        # cube.qpos[3:7] = start_quat
 
+        mj_data = mujoco.MjData(mj_model)
 
         policy_params = controller.init_params(initial_knots=initial_knots)
         reached_goal = False
 
-        for _ in range(200):
+        for _ in range(100):
             start_time = time.time()
 
             # Set the start state for the controller
@@ -438,7 +442,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
             for i in range(sim_steps_per_replan):
                 mj_data.ctrl[:] = np.array(us[i])
                 mujoco.mj_step(mj_model, mj_data)
-                if controller.task.running_cost(mj_data, mj_data.ctrl[:]) < GOAL_THRESHOLD:
+                if controller.task.success_function(mj_data, mj_data.ctrl[:]) < GOAL_THRESHOLD:
                     reached_goal = True
                     break
 

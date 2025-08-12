@@ -376,7 +376,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     # Start the simulation
     num_sucess = 0
 
-    for _ in range(10):
+    for _ in range(100):
 
         #### humanoid_standup
         # mj_data.qpos[:] = mj_model.keyframe("stand").qpos

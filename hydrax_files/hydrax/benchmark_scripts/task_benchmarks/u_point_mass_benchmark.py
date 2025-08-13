@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # DIAL specific
     BETA_OPT_ITER = 1
-    BETA_HORIZON = 1
+    BETA_HORIZON = 0.7
 
     # CEM specific
     NUM_ELITES = int(NUM_SAMPLES/4)

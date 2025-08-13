@@ -377,7 +377,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     num_sucess = 0
 
     number_of_iteration = 100
-    number_of_trials = 10
+    number_of_trials = 100
 
     total_plan_time = 0
 
@@ -459,7 +459,6 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
             for k in range(sim_steps_per_replan):
                 mj_data.ctrl[:] = np.array(us[k])
                 mujoco.mj_step(mj_model, mj_data)
-                viewer.sync()
                 if controller.task.success_function(mj_data, mj_data.ctrl[:]) < GOAL_THRESHOLD:
                     reached_goal = True
                     break

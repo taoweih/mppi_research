@@ -376,8 +376,8 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     # Start the simulation
     num_sucess = 0
 
-    number_of_iteration = 10
-    number_of_trials = 10
+    number_of_iteration = 100
+    number_of_trials = 100
 
     total_plan_time = 0
 

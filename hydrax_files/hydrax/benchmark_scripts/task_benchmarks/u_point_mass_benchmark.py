@@ -34,20 +34,24 @@ if __name__ == "__main__":
 
     # CEM specific
     NUM_ELITES = int(NUM_SAMPLES/4)
-    SIGMA_START = NOISE_LEVEL
-    SIGMA_MIN = NOISE_LEVEL/4
+    SIGMA_START = NOISE_LEVEL/2
+    SIGMA_MIN = NOISE_LEVEL/8
     EXPLORE_FRACTION = 0.5
+
+    Horizon_steps = 13
+    Horizon_start = 0.2
+    Horizon_end = 2.0
     
 
-    success = np.zeros((5, 10)) # number of controlers by horizon
-    all_frequency = np.zeros((5, 10))
+    success = np.zeros((5, Horizon_steps)) # number of controlers by horizon
+    all_frequency = np.zeros((5, Horizon_steps))
     all_state_trajectory = [[],[],[],[],[]] # number of controllers by horizon by number of iteration by number of trials by qpos shape
     all_control_trajectory = [[],[],[],[],[]]
 
     task = UPointMass()
 
-    for h in tqdm(range(10)):
-        HORIZON = (h+1)*0.2
+    for h in tqdm(range(Horizon_steps)):
+        HORIZON = (h+1)*0.1 + 0.7
 
         ctrl_list = [PredictiveSampling(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, plan_horizon=HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
                      
@@ -79,6 +83,9 @@ if __name__ == "__main__":
                 GOAL_THRESHOLD=0.05,
             )
             # num_success = h+j
+            # control_freq = 0
+            # state_trajectory = 0
+            # control_trajectory = 0
 
             success[j, h] = num_success
             all_frequency[j, h] = control_freq
@@ -155,7 +162,7 @@ if __name__ == "__main__":
 
     plt.figure()
     for j in range(all_frequency.shape[0]):
-        plt.plot(np.linspace(0.2, 2.0, 10), all_frequency[j], label=type(ctrl_list[j]).__name__)
+        plt.plot(np.linspace(Horizon_start, Horizon_end, Horizon_steps), all_frequency[j], label=type(ctrl_list[j]).__name__)
     plt.title(f'Task {type(task).__name__}')
     plt.xlabel("Horizon (seconds)")
     plt.ylabel("Control Frequency (HZ)")
@@ -171,7 +178,7 @@ if __name__ == "__main__":
 
     plt.figure()
     for j in range(success.shape[0]):
-        plt.plot(np.linspace(0.2, 2.0, 10), success[j], label=type(ctrl_list[j]).__name__)
+        plt.plot(np.linspace(Horizon_start, Horizon_end, Horizon_steps), success[j], label=type(ctrl_list[j]).__name__)
     plt.title(f'Task {type(task).__name__}')
     plt.xlabel("Horizon (seconds)")
     plt.ylabel("Sucess Rate (%)")

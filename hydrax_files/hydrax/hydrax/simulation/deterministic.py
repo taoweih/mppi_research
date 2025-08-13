@@ -377,12 +377,13 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     num_sucess = 0
 
     number_of_iteration = 100
-    number_of_trials = 100
+    number_of_trials = 10
 
     total_plan_time = 0
 
-    state_trajectories = np.zeros((number_of_iteration,number_of_trials)+ mj_data.qpos.shape)
-    control_trajectories = np.zeros((number_of_iteration,number_of_trials)+ mj_data.ctrl.shape)
+    state_trajectories = np.zeros((number_of_trials,number_of_iteration)+ mj_data.qpos.shape)
+    control_trajectories = np.zeros((number_of_trials,number_of_iteration)+ mj_data.ctrl.shape)
+   
 
     for i in range(number_of_trials):
 
@@ -404,10 +405,17 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
         # )
         # cube.qpos[3:7] = start_quat
 
-        mj_data = mujoco.MjData(mj_model)
+        mj_data_reset = mujoco.MjData(mj_model)
+        mj_data.qpos[:] = mj_data_reset.qpos
+        mj_data.qvel[:] = mj_data_reset.qvel
+        mj_data.mocap_pos[:] = mj_data_reset.mocap_pos
+        mj_data.mocap_quat[:] = mj_data_reset.mocap_quat
+        mj_data.time = 0.0
+        mujoco.mj_forward(mj_model, mj_data)
 
         policy_params = controller.init_params(initial_knots=initial_knots)
         reached_goal = False
+        
 
         for j in range(number_of_iteration):
             start_time = time.time()
@@ -451,6 +459,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
             for k in range(sim_steps_per_replan):
                 mj_data.ctrl[:] = np.array(us[k])
                 mujoco.mj_step(mj_model, mj_data)
+                viewer.sync()
                 if controller.task.success_function(mj_data, mj_data.ctrl[:]) < GOAL_THRESHOLD:
                     reached_goal = True
                     break
@@ -476,4 +485,4 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
 
     # Preserve the last printout
     print("")
-    return num_sucess, (1/plan_time)/(number_of_trials*number_of_iteration), state_trajectories, control_trajectories
+    return num_sucess, ((number_of_trials*number_of_iteration)/total_plan_time), state_trajectories, control_trajectories

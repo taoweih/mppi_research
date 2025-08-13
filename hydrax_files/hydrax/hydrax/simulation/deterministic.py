@@ -376,7 +376,15 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     # Start the simulation
     num_sucess = 0
 
-    for _ in range(100):
+    number_of_iteration = 10
+    number_of_trials = 10
+
+    total_plan_time = 0
+
+    state_trajectories = np.zeros((number_of_iteration,number_of_trials)+ mj_data.qpos.shape)
+    control_trajectories = np.zeros((number_of_iteration,number_of_trials)+ mj_data.ctrl.shape)
+
+    for i in range(number_of_trials):
 
         #### humanoid_standup
         # mj_data.qpos[:] = mj_model.keyframe("stand").qpos
@@ -401,7 +409,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
         policy_params = controller.init_params(initial_knots=initial_knots)
         reached_goal = False
 
-        for _ in range(100):
+        for j in range(number_of_iteration):
             start_time = time.time()
 
             # Set the start state for the controller
@@ -418,6 +426,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
             plan_start = time.time()
             policy_params, rollouts = jit_optimize(mjx_data, policy_params)
             plan_time = time.time() - plan_start
+            total_plan_time += plan_time
 
             # Update the ghost reference
             if reference is not None:
@@ -439,12 +448,15 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
 
 
             # simulate the system between spline replanning steps
-            for i in range(sim_steps_per_replan):
-                mj_data.ctrl[:] = np.array(us[i])
+            for k in range(sim_steps_per_replan):
+                mj_data.ctrl[:] = np.array(us[k])
                 mujoco.mj_step(mj_model, mj_data)
                 if controller.task.success_function(mj_data, mj_data.ctrl[:]) < GOAL_THRESHOLD:
                     reached_goal = True
                     break
+
+            state_trajectories[i][j] = mj_data.qpos
+            control_trajectories[i][j] = mj_data.ctrl
 
             if reached_goal:
                 num_sucess += 1
@@ -464,4 +476,4 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
 
     # Preserve the last printout
     print("")
-    return num_sucess
+    return num_sucess, (1/plan_time)/(number_of_trials*number_of_iteration), state_trajectories, control_trajectories

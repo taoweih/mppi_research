@@ -380,10 +380,12 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
     number_of_trials = 100
 
     total_plan_time = 0
+    frequency = 0
 
     state_trajectories = np.zeros((number_of_trials,number_of_iteration)+ mj_data.qpos.shape)
     control_trajectories = np.zeros((number_of_trials,number_of_iteration)+ mj_data.ctrl.shape)
    
+    base_seed = 5
 
     for i in range(number_of_trials):
 
@@ -413,7 +415,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
         mj_data.time = 0.0
         mujoco.mj_forward(mj_model, mj_data)
 
-        policy_params = controller.init_params(initial_knots=initial_knots)
+        policy_params = controller.init_params(initial_knots=initial_knots, seed=base_seed+i)
         reached_goal = False
         
 
@@ -435,6 +437,7 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
             policy_params, rollouts = jit_optimize(mjx_data, policy_params)
             plan_time = time.time() - plan_start
             total_plan_time += plan_time
+            frequency = ((i*j)/total_plan_time)
 
             # Update the ghost reference
             if reference is not None:
@@ -484,4 +487,4 @@ def run_benchmark(  # noqa: PLR0912, PLR0915
 
     # Preserve the last printout
     print("")
-    return num_sucess, ((number_of_trials*number_of_iteration)/total_plan_time), state_trajectories, control_trajectories
+    return num_sucess, frequency, state_trajectories, control_trajectories

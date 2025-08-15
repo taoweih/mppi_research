@@ -27,6 +27,7 @@ if __name__ == "__main__":
 
     # MPPI staged rollout specific
     NUM_KNOTS_PER_STAGE = 4
+    KDE_BANDWIDTH = 1.0
 
     # DIAL specific
     BETA_OPT_ITER = 1
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     SIGMA_MIN = NOISE_LEVEL/8
     EXPLORE_FRACTION = 0.5
 
-    Horizon_steps = 13
+    Horizon_steps = 10
     Horizon_start = 0.2
     Horizon_end = 2.0
     
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     task = UPointMass()
 
     for h in tqdm(range(Horizon_steps)):
-        HORIZON = (h+1)*0.1 + 0.7
+        HORIZON = (h+1)*0.2 # + 0.75
 
         ctrl_list = [PredictiveSampling(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, plan_horizon=HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
                      
@@ -59,7 +60,7 @@ if __name__ == "__main__":
                             ,plan_horizon=HORIZON,spline_type=SPLINE_TYPE,num_knots=NUM_KNOTS), 
 
                     MPPIStagedRollout(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, temperature=TEMPERATURE, 
-                                    num_knots_per_stage=NUM_KNOTS_PER_STAGE, plan_horizon= HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
+                                    num_knots_per_stage=NUM_KNOTS_PER_STAGE, plan_horizon= HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS, kde_bandwidth=KDE_BANDWIDTH),
 
                     DIAL(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, beta_opt_iter=BETA_OPT_ITER, beta_horizon=BETA_HORIZON, temperature=TEMPERATURE, plan_horizon=HORIZON,
                          spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
@@ -122,7 +123,8 @@ if __name__ == "__main__":
             "Horizon (s)": HORIZON,
             "Spline type": SPLINE_TYPE,
             "Number of knots": NUM_KNOTS,
-            "Number of knots per stage": NUM_KNOTS_PER_STAGE
+            "Number of knots per stage": NUM_KNOTS_PER_STAGE,
+            "KDE Bandwidth": KDE_BANDWIDTH
         },
         "DIAL": {
             "Number of samples": NUM_SAMPLES,

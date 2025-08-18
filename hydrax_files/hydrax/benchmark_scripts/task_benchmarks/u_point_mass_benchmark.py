@@ -39,8 +39,8 @@ if __name__ == "__main__":
     SIGMA_MIN = NOISE_LEVEL/8
     EXPLORE_FRACTION = 0.5
 
-    Horizon_steps = 10
-    Horizon_start = 0.2
+    Horizon_steps = 25
+    Horizon_start = 0.8
     Horizon_end = 2.0
     
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     task = UPointMass()
 
     for h in tqdm(range(Horizon_steps)):
-        HORIZON = (h+1)*0.2 # + 0.75
+        HORIZON = (h)*0.05 + 0.8
 
         ctrl_list = [PredictiveSampling(task, num_samples=NUM_SAMPLES, noise_level=NOISE_LEVEL, plan_horizon=HORIZON, spline_type=SPLINE_TYPE, num_knots=NUM_KNOTS),
                      
